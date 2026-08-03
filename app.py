@@ -67,9 +67,10 @@ with col2:
     expense_amount = st.number_input("3. Expense Amount ($):", min_value=0.0, value=0.0, step=1.0)
     expense_date = st.date_input("4. Transaction Date:", datetime.date.today())
 
-# --- ⛽ DİNAMİK YANACAQ HESABLAYICI SAHƏLƏRİ (YALNIZ FUEL SEÇİLƏNDƏ ÇIXIR) ---
+# --- ⛽ DİNAMİK YANACAQ HESABLAYICI SAHƏLƏRİ (Dəyişənlər əvvəlcədən 0 təyin olunur) ---
 fuel_liters = 0.0
 km_driven = 0.0
+
 if "Fuel" in expense_type:
     st.markdown("<div style='background-color: #eff6ff; padding: 15px; border-radius: 10px; border: 1px solid #bfdbfe; margin-top: 10px;'>", unsafe_allow_html=True)
     st.markdown("<h4 style='color: #1e40af !important; margin-bottom: 10px;'>⛽ Fuel Consumption Calculator Matrix</h4>", unsafe_allow_html=True)
@@ -88,14 +89,13 @@ if add_button:
     if car_model.strip() == "" or expense_amount <= 0:
         st.error("⚠️ Please enter the vehicle model and ensure the amount is greater than 0!")
     else:
-        # 100 km üçün xərc və litr hesablaması
         cost_per_100km = 0.0
         liters_per_100km = 0.0
         if "Fuel" in expense_type and km_driven > 0:
             cost_per_100km = (expense_amount / km_driven) * 100
             if fuel_liters > 0:
                 liters_per_100km = (fuel_liters / km_driven) * 100
-            new_data = {
+        new_data = {
             "Vehicle Model": car_model.strip(),
             "Expense Category": expense_type,
             "Amount ($)": expense_amount,
