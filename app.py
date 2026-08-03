@@ -104,12 +104,11 @@ if st.session_state["expenses_list"]:
     
     total_cost = df["Amount ($)"].sum()
     st.markdown(f"<h4 style='color: #2563eb !important;'>💰 Total Cumulative Vehicle Expenditure: {total_cost:,.2f} $</h4>", unsafe_allow_html=True)
-    # --- 🍕 SEHRBBAZ VİZUAL QRAFİK MATRIX (YALNIZ CƏDVƏL VARSA İŞƏ DÜŞÜR! 🎉) ---
+   # 🌟 SERVER XƏTASINI KÖKÜNDƏN SİLƏN ƏN ETİBARLI SÜTUN QRAFİKİ 🎉 🌟
     st.write("---")
     st.write("### 📊 Expense Distribution Analytics Horizon")
-    
     chart_data = df.groupby("Expense Category")["Amount ($)"].sum()
-    st.pie_chart(chart_data)
+    st.bar_chart(chart_data)
 else:
     st.info("💡 No expenses registered yet. Input your core parameters above to initialize track logs.")
 # --- 🍕 SEHRBBAZ VİZUAL QRAFİK MATRIX (SƏNİN İSTƏDİYİN HƏMİN O LÜKS ELEMENT! 🎉) ---
