@@ -98,7 +98,7 @@ if add_button:
             "Vehicle Model": car_model.strip(),
             "Expense Category": expense_type,
             "Amount ($)": expense_amount,
-            "Date": expense_date.strftime("%Y-%m-d")
+            "Date": expense_date.strftime("%Y-%m-%d")
         }
         st.session_state["expenses_list"].append(new_data)
         st.success("✅ Expense successfully logged to your diary!")
