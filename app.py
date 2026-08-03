@@ -2,19 +2,22 @@ import streamlit as st
 import pandas as pd
 import datetime
 
-# --- 🎨 AUTOCOST LÜKS GECƏ REJİMİ VƏ PEŞƏKAR VİZUAL AYARLAR ---
+
+# --- 🎨 AUTOCOST LÜKS AĞ REJİMİ VƏ PEŞƏKAR VİZUAL AYARLAR ---
 st.set_page_config(page_title="AutoCost - Car Expenses Log", page_icon="🚗", layout="centered")
 
 st.markdown("""
 <style>
+/* FONY TAMAMİLƏ AĞAPPAQ LÜKS EDİRİK */
 html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] { 
-    background-color: #0f172a !important; 
-    color: #ffffff !important; 
+    background-color: #f8fafc !important; 
+    color: #0f172a !important; 
 }
 
-h2, h3 { color: #3b82f6 !important; font-family: 'Helvetica Neue', sans-serif; font-weight: bold; }
+h2, h3 { color: #1e3a8a !important; font-family: 'Helvetica Neue', sans-serif; font-weight: bold; }
+h4 { color: #1e3a8a !important; font-weight: bold !important; margin-top: 15px !important; }
 
-/* 🌟 XANALARIN DAXİLİ VƏ İSTİFADƏÇİ YAZISI TAM QAPQARA OLUŞUR */
+/* XANALARIN DAXİLİ VƏ YAZISI TAM SƏLİQƏLİ OLUŞUR */
 .stTextInput>div>div>input, .stSelectbox>div>div>div, .stNumberInput>div>div>input, .stDateInput>div>div>input {
     background-color: #ffffff !important;
     border: 2px solid #cbd5e1 !important;
@@ -25,17 +28,18 @@ h2, h3 { color: #3b82f6 !important; font-family: 'Helvetica Neue', sans-serif; f
     font-weight: 600 !important;
 }
 
-/* 🌟 DÜNƏNKİ O SEHRBAZLIQ: ARXA FONDAKI İPUCU SÖZLƏRİ TAM YUMŞAQ AÇIQ BOZ OLUŞUR 🎉 */
-::placeholder { color: #cbd5e1 !important; opacity: 1 !important; -webkit-text-fill-color: #cbd5e1 !important; }
-input::placeholder { color: #cbd5e1 !important; opacity: 1 !important; -webkit-text-fill-color: #cbd5e1 !important; }
-.stTextInput>div>div>input::placeholder { color: #cbd5e1 !important; -webkit-text-fill-color: #cbd5e1 !important; }
+/* Zərif və yumşaq açıq boz ipucu (placeholder) rəngləri */
+::placeholder { color: #94a3b8 !important; opacity: 1 !important; -webkit-text-fill-color: #94a3b8 !important; }
+input::placeholder { color: #94a3b8 !important; opacity: 1 !important; -webkit-text-fill-color: #94a3b8 !important; }
 
+/* Xanaların yuxarıdakı ad yazıları tam tünd lüks boz olur */
 .stTextInput label, .stSelectbox label, .stNumberInput label, .stDateInput label {
-    color: #ffffff !important;
-    font-size: 16px !important;
+    color: #334155 !important;
+    font-size: 15px !important;
     font-weight: bold;
 }
 
+/* Lüks Göy Düyməmiz */
 .stButton>button { 
     background-color: #2563eb !important; 
     color: white !important; 
@@ -44,10 +48,11 @@ input::placeholder { color: #cbd5e1 !important; opacity: 1 !important; -webkit-t
     border: none;
     padding: 12px;
     font-size: 16px;
-    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.4);
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
 }
 .stButton>button:hover { background-color: #1d4ed8 !important; }
 
+/* Cari jurnal cədvəlinin peşəkar ağ blok nizamı */
 .report-section {
     background-color: #ffffff !important; 
     padding: 25px; 
@@ -55,16 +60,16 @@ input::placeholder { color: #cbd5e1 !important; opacity: 1 !important; -webkit-t
     color: #0f172a !important; 
     margin-bottom: 20px;
     border-left: 6px solid #2563eb;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
 }
 </style>
 """, unsafe_allow_html=True)
 
 # --- 👑 BAŞLIQ PANƏLİ ---
 st.markdown("<h2>🚗 AutoCost — Car Expenses Log</h2>", unsafe_allow_html=True)
-st.markdown("<p style='color: #94a3b8; font-size: 15px;'>Smart financial vehicle diary tailored for modern drivers. Track your fuel consumption, unexpected repairs, and insurance assets with detailed matrix analytics loops.</p>", unsafe_allow_html=True)
+st.markdown("<p style='color: #475569; font-size: 15px;'>Smart financial vehicle diary tailored for modern drivers. Track your fuel consumption, unexpected repairs, and insurance assets with detailed matrix analytics loops.</p>", unsafe_allow_html=True)
 st.write("---")
-# --- 📥 SÜRÜCÜ GİRİŞ XANALARI ---
-# --- 📥 DRIVER INPUT FIELDS ---
+# --- 📥 DRIVER INPUT FIELDS (İNDİ DƏYİŞƏNLƏR PEŞƏKARCA TƏYİN EDİLDİ 🎉) ---
 col1, col2 = st.columns(2)
 
 with col1:
