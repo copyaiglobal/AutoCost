@@ -56,26 +56,6 @@ st.write("---")
 if "expenses_list" not in st.session_state:
     st.session_state["expenses_list"] = []
 
-# --- 🚨 REMINDER MATRIX STATUS PANEL (HƏMİŞƏ GÖRÜNƏN AKTİV İZLƏMƏ) ---
-if st.session_state["expenses_list"]:
-    today = datetime.date.today()
-    reminder_items = [item for item in st.session_state["expenses_list"] if "Insurance" in item["Expense Category"] or "Repair" in item["Expense Category"]]
-    
-    if reminder_items:
-        st.write("### 🚨 Reminder Matrix Status")
-        for item in reminder_items:
-            item_date = datetime.datetime.strptime(item["Date"], "%Y-%m-%d").date()
-            expiry_date = item_date + datetime.timedelta(days=365)
-            days_left = (expiry_date - today).days
-            
-            if days_left <= 0:
-                st.error(f"🚨 Critical Alert: Your {item['Expense Category']} for {item['Vehicle Model']} has expired! (Due: {expiry_date})")
-            elif days_left <= 30:
-                st.warning(f"⚠️ Reminder Alert: Your {item['Expense Category']} for {item['Vehicle Model']} expires in {days_left} days (on {expiry_date})!")
-            else:
-                st.info(f"🛡️ Active Tracker: Your {item['Expense Category']} for {item['Vehicle Model']} is secure. Expires in {days_left} days (on {expiry_date}).")
-        st.write("---")
-
 # --- 📥 DRIVER INPUT FIELDS ---
 col1, col2 = st.columns(2)
 
@@ -87,21 +67,49 @@ with col2:
     expense_amount = st.number_input("3. Expense Amount ($):", min_value=0.0, value=0.0, step=1.0)
     expense_date = st.date_input("4. Transaction Date:", datetime.date.today())
 
+# --- ⛽ DİNAMİK YANACAQ HESABLAYICI SAHƏLƏRİ (YALNIZ FUEL SEÇİLƏNDƏ ÇIXIR) ---
+fuel_liters = 0.0
+km_driven = 0.0
+if "Fuel" in expense_type:
+    st.markdown("<div style='background-color: #eff6ff; padding: 15px; border-radius: 10px; border: 1px solid #bfdbfe; margin-top: 10px;'>", unsafe_allow_html=True)
+    st.markdown("<h4 style='color: #1e40af !important; margin-bottom: 10px;'>⛽ Fuel Consumption Calculator Matrix</h4>", unsafe_allow_html=True)
+    f_col1, f_col2 = st.columns(2)
+    with f_col1:
+        fuel_liters = st.number_input("Fuel Liters (L):", min_value=0.0, value=0.0, step=0.5)
+    with f_col2:
+        km_driven = st.number_input("Kilometers Driven (km):", min_value=0.0, value=0.0, step=1.0)
+    st.markdown("</div>", unsafe_allow_html=True)
+
 st.write(" ")
 add_button = st.button("Add Expense to Log ✨", use_container_width=True)
 st.write("---")
+
 if add_button:
     if car_model.strip() == "" or expense_amount <= 0:
         st.error("⚠️ Please enter the vehicle model and ensure the amount is greater than 0!")
     else:
-        new_data = {
+        # 100 km üçün xərc və litr hesablaması
+        cost_per_100km = 0.0
+        liters_per_100km = 0.0
+        if "Fuel" in expense_type and km_driven > 0:
+            cost_per_100km = (expense_amount / km_driven) * 100
+            if fuel_liters > 0:
+                liters_per_100km = (fuel_liters / km_driven) * 100
+            new_data = {
             "Vehicle Model": car_model.strip(),
             "Expense Category": expense_type,
             "Amount ($)": expense_amount,
-            "Date": expense_date.strftime("%Y-%m-%d")
+            "Date": str(expense_date),
+            "Liters (L)": fuel_liters if "Fuel" in expense_type else 0.0,
+            "Km Driven": km_driven if "Fuel" in expense_type else 0.0,
+            "Cost/100km ($)": round(cost_per_100km, 2) if "Fuel" in expense_type else 0.0
         }
         st.session_state["expenses_list"].append(new_data)
-        st.success("✅ Expense successfully logged to your diary!")
+        
+        if "Fuel" in expense_type and km_driven > 0:
+            st.success(f"✅ Fuel logged! 100 km-ə sərfiyyat: {cost_per_100km:.2f} $ ({liters_per_100km:.2f} L / 100km)")
+        else:
+            st.success("✅ Expense successfully logged to your diary!")
         st.rerun()
 
 # --- 📊 LIVE EXPENSE TRACKING MATRIX ---
