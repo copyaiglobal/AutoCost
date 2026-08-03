@@ -104,19 +104,25 @@ if add_button:
 # --- 📊 LIVE EXPENSE TRACKING MATRIX ---
 if st.session_state["expenses_list"]:
     st.write("### 📋 Current Vehicle Expenses Log Matrix")
+    
+    # 1. İlk öncə xalis riyazi cədvəli qururuq
     df = pd.DataFrame(st.session_state["expenses_list"])
     
-    # 🌟 BURA YAPIŞDIRIRSAN (BAŞINDA MÜTLƏQ 4 BOŞLUQ OLMALIDIR 🎉) 🌟
-    df["Amount ($)"] = df["Amount ($)"].map("{:,.2f}".format)
-    st.table(df)
+    # 2. Toplam xərci ilk öncə riyazi rəqəmlərlə hesablayırıq
+    total_cost = df["Amount ($)"].sum()
     
-    total_cost = df["Amount ($)"].astype(float).sum() # Kiçik riyazi nizam
-    st.markdown(f"<h4 style='color: #2563eb !important;'>💰 Total Cumulative Vehicle Expenditure: {total_cost:,.2f} $</h4>", unsafe_allow_html=True)
-   # 🌟 SERVER XƏTASINI KÖKÜNDƏN SİLƏN ƏN ETİBARLI SÜTUN QRAFİKİ 🎉 🌟
+    # 3. 🌟 QRAFİK MƏTLUMATINI MƏTNƏ ÇEVİRMƏDƏN ÖNCƏ RƏQƏMLƏRLƏ ÇƏKİRİK 🎉 🌟
     st.write("---")
     st.write("### 📊 Expense Distribution Analytics Horizon")
     chart_data = df.groupby("Expense Category")["Amount ($)"].sum()
     st.bar_chart(chart_data)
+    st.write("---")
+    
+    # 4. Ən sonda ekrandakı cədvəlin o 4 sıfırını silib lüks mətn formasına salırıq
+    df["Amount ($)"] = df["Amount ($)"].map("{:,.2f}".format)
+    st.table(df)
+    
+    st.markdown(f"<h4 style='color: #2563eb !important;'>💰 Total Cumulative Vehicle Expenditure: {total_cost:,.2f} $</h4>", unsafe_allow_html=True)
 else:
     st.info("💡 No expenses registered yet. Input your core parameters above to initialize track logs.")
 # --- 🍕 SEHRBBAZ VİZUAL QRAFİK MATRIX (SƏNİN İSTƏDİYİN HƏMİN O LÜKS ELEMENT! 🎉) ---
