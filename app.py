@@ -78,9 +78,6 @@ with col2:
 st.write(" ")
 add_button = st.button("Add Expense to Log ✨", use_container_width=True)
 st.write("---")
-# Xərcləri siyahıya əlavə etmək üçün lüks mavi düyməmiz
-add_button = st.button("Xərci Jurnala Əlavə Et ✨", use_container_width=True)
-st.write("---")
 # --- 💾 DAXİLİ YADDAŞ (SESSION STATE) SİSTEMİ ---
 # --- 💾 INTERNAL SESSION STORAGE ---
 if "expenses_list" not in st.session_state:
@@ -110,6 +107,7 @@ if st.session_state["expenses_list"]:
 else:
     st.info("💡 No expenses registered yet. Input your core parameters above to initialize track logs.")
 # --- 🍕 SEHRBBAZ VİZUAL QRAFİK MATRIX (SƏNİN İSTƏDİYİN HƏMİN O LÜKS ELEMENT! 🎉) ---
+    # --- 🍕 SEHRBBAZ VİZUAL QRAFİK MATRIX (SƏNİN İSTƏDİYİN HƏMİN O LÜKS ELEMENT! 🎉) ---
     st.write("---")
     st.write("### 📊 Expense Distribution Analytics Horizon")
     
