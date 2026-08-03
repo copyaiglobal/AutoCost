@@ -120,7 +120,14 @@ if st.session_state["expenses_list"]:
     
     st.write("### 📋 Current Vehicle Expenses Log Matrix")
     df_display = df.copy()
+    
+    # Bütün rəqəmsal sütunları 2 simvola formatlayırıq ki, 4 sıfır çıxmasın
     df_display["Amount ($)"] = df_display["Amount ($)"].map("{:,.2f}".format)
+    if "Cost/100km ($)" in df_display.columns:
+        df_display["Cost/100km ($)"] = df_display["Cost/100km ($)"].map("{:,.2f}".format)
+        df_display["Liters (L)"] = df_display["Liters (L)"].map("{:,.2f}".format)
+        df_display["Km Driven"] = df_display["Km Driven"].map("{:,.2f}".format)
+        
     st.table(df_display)
     
     st.markdown(f"<h4 style='color: #2563eb !important;'>💰 Total Cumulative Vehicle Expenditure: {total_cost:,.2f} $</h4>", unsafe_allow_html=True)
