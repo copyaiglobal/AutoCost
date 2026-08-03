@@ -69,13 +69,32 @@ input::placeholder { color: #94a3b8 !important; opacity: 1 !important; -webkit-t
 st.markdown("<h2>🚗 AutoCost — Car Expenses Log</h2>", unsafe_allow_html=True)
 st.markdown("<p style='color: #475569; font-size: 15px;'>Smart financial vehicle diary tailored for modern drivers. Track your fuel consumption, unexpected repairs, and insurance assets with detailed matrix analytics loops.</p>", unsafe_allow_html=True)
 st.write("---")
-# --- 📥 DRIVER INPUT FIELDS (İNDİ DƏYİŞƏNLƏR PEŞƏKARCA TƏYİN EDİLDİ 🎉) ---
+
+# --- 💾 DAXİLİ YADDAŞ (SESSION STATE) SİSTEMİ ---
+if "expenses_list" not in st.session_state:
+    st.session_state["expenses_list"] = []
+
+# --- 🚨 REMINDER MATRIX CHECK (SİĞORTA VƏ TƏXMİNİ XƏBƏRDARLIQ) ---
+if st.session_state["expenses_list"]:
+    today = datetime.date.today()
+    for item in st.session_state["expenses_list"]:
+        if "Insurance" in item["Expense Category"] or "Repair" in item["Expense Category"]:
+            # Qeyd olunan tarixə 1 il (365 gün) əlavə edib bitmə tarixini tapırıq
+            item_date = datetime.datetime.strptime(item["Date"], "%Y-%m-%d").date()
+            expiry_date = item_date + datetime.timedelta(days=365)
+            days_left = (expiry_date - today).days
+            
+            if days_left <= 30 and days_left > 0:
+                st.warning(f"⚠️ Reminder Matrix Alert: Your {item['Expense Category']} for {item['Vehicle Model']} expires in {days_left} days (on {expiry_date})!")
+            elif days_left <= 0:
+                st.error(f"🚨 Critical Alert: Your {item['Expense Category']} for {item['Vehicle Model']} has expired or is due today ({expiry_date})!")
+
+# --- 📥 DRIVER INPUT FIELDS ---
 col1, col2 = st.columns(2)
 
 with col1:
     car_model = st.text_input("1. Vehicle Model / Brand:", placeholder="e.g., Prius, Mercedes, Hyundai")
     expense_type = st.selectbox("2. Expense Category:", ["Fuel ⛽", "Repair 🔧", "Insurance 📜", "Other 📦"])
-
 with col2:
     expense_amount = st.number_input("3. Expense Amount ($):", min_value=0.0, value=0.0, step=1.0)
     expense_date = st.date_input("4. Transaction Date:", datetime.date.today())
@@ -83,10 +102,6 @@ with col2:
 st.write(" ")
 add_button = st.button("Add Expense to Log ✨", use_container_width=True)
 st.write("---")
-# --- 💾 DAXİLİ YADDAŞ (SESSION STATE) SİSTEMİ ---
-# --- 💾 INTERNAL SESSION STORAGE ---
-if "expenses_list" not in st.session_state:
-    st.session_state["expenses_list"] = []
 
 if add_button:
     if car_model.strip() == "" or expense_amount <= 0:
@@ -100,34 +115,23 @@ if add_button:
         }
         st.session_state["expenses_list"].append(new_data)
         st.success("✅ Expense successfully logged to your diary!")
+        st.rerun()
 
-# --- 📊 LIVE EXPENSE TRACKING MATRIX (CƏDVƏL BİRİNCİ, QRAFİK SONRA 🎉) ---
+# --- 📊 LIVE EXPENSE TRACKING MATRIX ---
 if st.session_state["expenses_list"]:
-    # 1. İlk öncə xalis riyazi cədvəli arxa fonda qururuq
     df = pd.DataFrame(st.session_state["expenses_list"])
-    
-    # 2. Toplam xərci rəqəmlərlə hesablayırıq
     total_cost = df["Amount ($)"].sum()
-    
-    # 3. Qrafik üçün lazımi təmiz datanı bura kopyalayırıq (Cədvəl mətnə çevrilmədən öncə)
     chart_data = df.groupby("Expense Category")["Amount ($)"].sum()
     
-    # 4. 🌟 CƏDVƏL ARTIQ BİRİNCİ ÇIXIR VƏ ARXASINDAKI 4 SIFIR SİLİNİR 🎉 🌟
     st.write("### 📋 Current Vehicle Expenses Log Matrix")
-    df["Amount ($)"] = df["Amount ($)"].map("{:,.2f}".format)
-    st.table(df)
+    df_display = df.copy()
+    df_display["Amount ($)"] = df_display["Amount ($)"].map("{:,.2f}".format)
+    st.table(df_display)
     
     st.markdown(f"<h4 style='color: #2563eb !important;'>💰 Total Cumulative Vehicle Expenditure: {total_cost:,.2f} $</h4>", unsafe_allow_html=True)
     
-    # 5. 🌟 QRAFİK TAM PEŞƏKAR YERİNƏ — CƏDVƏLİN ALTINA OTURDU 🎉 🌟
     st.write("---")
     st.write("### 📊 Expense Distribution Analytics Horizon")
     st.bar_chart(chart_data)
 else:
     st.info("💡 No expenses registered yet. Input your core parameters above to initialize track logs.")
-# --- 🍕 SEHRBBAZ VİZUAL QRAFİK MATRIX (SƏNİN İSTƏDİYİN HƏMİN O LÜKS ELEMENT! 🎉) ---
-    # --- 🍕 SEHRBBAZ VİZUAL QRAFİK MATRIX (SƏNİN İSTƏDİYİN HƏMİN O LÜKS ELEMENT! 🎉) ---
-    st.write("---")
-    st.write("### 📊 Expense Distribution Analytics Horizon")
-    
-    
