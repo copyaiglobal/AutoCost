@@ -80,11 +80,14 @@ st.markdown("<h2>🚗 AutoCost — Car Expenses & Documents Diary</h2>", unsafe_
 st.markdown("<p style='color: #475569; font-size: 15px;'>Smart financial vehicle diary tailored for modern drivers. Track your fuel consumption, unexpected repairs, insurance assets, and critical document expiration alerts.</p>", unsafe_allow_html=True)
 st.write("---")
 
-# --- 🗂️ TABS (PƏNCƏRƏLƏR) ---
-tab1, tab2 = st.tabs(["💰 Expenses & Analytics", "📜 Document Expiry Alerts"])
+# --- 🗂️ 3 AYRI TAB (PƏNCƏRƏ) ---
+tab1, tab2, tab3 = st.tabs(["💰 Add Expense", "🔍 Filter, Search & Analytics", "📜 Document Expiry Alerts"])
 
+# --- TAB 1: XƏRC DAXİLMƏ ---
 with tab1:
-    st.markdown("### 💰 Log Vehicle Expense")
+    st.markdown("### 💰 Log New Vehicle Expense")
+    st.markdown("<p style='color: #475569; font-size: 14px;'>Fill out the core parameters below to record a new fuel, repair, or maintenance expense.</p>", unsafe_allow_html=True)
+    
     col1, col2 = st.columns(2)
 
     with col1:
@@ -133,7 +136,10 @@ with tab1:
             else:
                 st.success("✅ Expense successfully logged to your database diary!")
 
-    st.write("---")
+# --- TAB 2: FİLTR, AXTARIŞ, CƏDVƏL VƏ ANALİTİKA ---
+with tab2:
+    st.markdown("### 🔍 Filter, Search & Analytics Horizon")
+    st.markdown("<p style='color: #475569; font-size: 14px;'>Filter your records by category, search by vehicle model, export reports, and view spending charts.</p>", unsafe_allow_html=True)
 
     df = pd.read_sql_query("""
         SELECT vehicle_model AS 'Vehicle Model', 
@@ -147,7 +153,6 @@ with tab1:
     """, conn)
 
     if not df.empty:
-        st.write("### 🔍 Filter & Search Horizon")
         f_col1, f_col2 = st.columns(2)
         
         with f_col1:
@@ -170,7 +175,7 @@ with tab1:
             total_cost = filtered_df["Amount ($)"].sum()
             chart_data = filtered_df.groupby("Expense Category")["Amount ($)"].sum()
             
-            st.write("### 📋 Current Vehicle Expenses Log Matrix (SQLite Database)")
+            st.markdown("#### 📋 Current Vehicle Expenses Log Matrix (SQLite Database)")
             df_display = filtered_df.copy()
             
             df_display["Amount ($)"] = df_display["Amount ($)"].map(lambda x: f"{x:,.2f}")
@@ -185,6 +190,7 @@ with tab1:
             @st.cache_data
             def convert_df_to_csv(dataframe):
                 return dataframe.to_csv(index=False).encode("utf-8-sig")
+
             csv_data = convert_df_to_csv(filtered_df)
             
             st.download_button(
@@ -196,14 +202,15 @@ with tab1:
             )
             
             st.write("---")
-            st.write("### 📊 Expense Distribution Analytics Horizon")
+            st.markdown("#### 📊 Expense Distribution Analytics Horizon")
             st.bar_chart(chart_data)
         else:
             st.warning("⚠️ No records found matching your filter or search criteria.")
     else:
-        st.info("💡 No expenses registered in the database yet. Input your core parameters above to initialize track logs.")
+        st.info("💡 No expenses registered in the database yet. Add your first expense using the 'Add Expense' tab.")
 
-with tab2:
+# --- TAB 3: SƏNƏDLƏR VƏ XƏBƏRDARLIQLAR ---
+with tab3:
     st.markdown("### 📜 Document & Expiry Alerts Matrix")
     st.markdown("<p style='color: #475569; font-size: 14px;'>Track your vehicle insurance, technical inspections, and critical document expiry dates with automated alerts.</p>", unsafe_allow_html=True)
 
@@ -238,7 +245,8 @@ with tab2:
     days_left_list = []
 
     if not docs_df.empty:
-        st.write("#### Registered Documents & Status Horizon")
+        st.write("---")
+        st.markdown("#### Registered Documents & Status Horizon")
         today = datetime.date.today()
         
         status_list = []
@@ -260,8 +268,3 @@ with tab2:
 
     expired_count = sum(1 for d in days_left_list if d < 0)
     soon_count = sum(1 for d in days_left_list if 0 <= d <= 30)
-
-    if expired_count > 0:
-        st.error(f"🚨 Attention! You have {expired_count} expired document(s)! Please renew them immediately.")
-    if soon_count > 0:
-        st.warning(f"⚠️ Warning! You have {soon_count} document(s) expiring within the next 30 days.")
