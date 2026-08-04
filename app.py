@@ -67,7 +67,7 @@ with col2:
     expense_amount = st.number_input("3. Expense Amount ($):", min_value=0.0, value=0.0, step=1.0)
     expense_date = st.date_input("4. Transaction Date:", datetime.date.today())
 
-# --- ⛽ DİNAMİK YANACAQ HESABLAYICI SAHƏLƏRİ (Dəyişənlər əvvəlcədən 0 təyin olunur) ---
+# --- ⛽ DİNAMİK YANACAQ HESABLAYICI SAHƏLƏRİ ---
 fuel_liters = 0.0
 km_driven = 0.0
 
@@ -91,11 +91,12 @@ if add_button:
     else:
         cost_per_100km = 0.0
         liters_per_100km = 0.0
-        if "Fuel" in expense_type and km_driven > 0:
+if "Fuel" in expense_type and km_driven > 0:
             cost_per_100km = (expense_amount / km_driven) * 100
             if fuel_liters > 0:
                 liters_per_100km = (fuel_liters / km_driven) * 100
-        new_data = {
+        
+            new_data = {
             "Vehicle Model": car_model.strip(),
             "Expense Category": expense_type,
             "Amount ($)": expense_amount,
@@ -104,13 +105,13 @@ if add_button:
             "Km Driven": km_driven if "Fuel" in expense_type else 0.0,
             "Cost/100km ($)": round(cost_per_100km, 2) if "Fuel" in expense_type else 0.0
         }
-        st.session_state["expenses_list"].append(new_data)
+            st.session_style = st.session_state["expenses_list"].append(new_data)
         
-        if "Fuel" in expense_type and km_driven > 0:
-            st.success(f"✅ Fuel logged! 100 km-ə sərfiyyat: {cost_per_100km:.2f} $ ({liters_per_100km:.2f} L / 100km)")
-        else:
-            st.success("✅ Expense successfully logged to your diary!")
-        st.rerun()
+            if "Fuel" in expense_type and km_driven > 0:
+                st.success(f"✅ Fuel logged! 100 km-ə sərfiyyat: {cost_per_100km:.2f} $ ({liters_per_100km:.2f} L / 100km)")
+            else:
+                st.success("✅ Expense successfully logged to your diary!")
+            st.rerun()
 
 # --- 📊 LIVE EXPENSE TRACKING MATRIX ---
 if st.session_state["expenses_list"]:
@@ -121,7 +122,7 @@ if st.session_state["expenses_list"]:
     st.write("### 📋 Current Vehicle Expenses Log Matrix")
     df_display = df.copy()
     
-    # Bütün rəqəmsal sütunları 2 simvola formatlayırıq ki, 4 sıfır çıxmasın
+    # Bütün rəqəmsal sütunları 2 simvola formatlayırıq
     df_display["Amount ($)"] = df_display["Amount ($)"].map("{:,.2f}".format)
     if "Cost/100km ($)" in df_display.columns:
         df_display["Cost/100km ($)"] = df_display["Cost/100km ($)"].map("{:,.2f}".format)
@@ -131,6 +132,21 @@ if st.session_state["expenses_list"]:
     st.table(df_display)
     
     st.markdown(f"<h4 style='color: #2563eb !important;'>💰 Total Cumulative Vehicle Expenditure: {total_cost:,.2f} $</h4>", unsafe_allow_html=True)
+    
+    # --- 📥 CSV İXRAC EDİLMƏSİ (YENİ ƏLAVƏ) ---
+    @st.cache_data
+    def convert_df_to_csv(dataframe):
+        return dataframe.to_csv(index=False).encode("utf-8")
+
+    csv_data = convert_df_to_csv(df)
+    
+    st.download_button(
+        label="📥 Xərcləri Excel / CSV olaraq yüklə",
+        data=csv_data,
+        file_name="autocost_hesabat.csv",
+        mime="text/csv",
+        use_container_width=True
+    )
     
     st.write("---")
     st.write("### 📊 Expense Distribution Analytics Horizon")
