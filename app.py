@@ -61,7 +61,7 @@ input::placeholder { color: #94a3b8 !important; opacity: 1 !important; -webkit-t
     font-weight: bold;
 }
 
-.stButton>button { 
+.stButton>button, div.stFormSubmitButton>button { 
     background-color: #2563eb !important; 
     color: white !important; 
     border-radius: 10px; 
@@ -70,8 +70,9 @@ input::placeholder { color: #94a3b8 !important; opacity: 1 !important; -webkit-t
     padding: 12px;
     font-size: 16px;
     box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    width: 100%;
 }
-.stButton>button:hover { background-color: #1d4ed8 !important; }
+.stButton>button:hover, div.stFormSubmitButton>button:hover { background-color: #1d4ed8 !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -100,8 +101,7 @@ with tab1:
 
     fuel_liters = 0.0
     km_driven = 0.0
-
-    if "Fuel" in expense_type:
+if "Fuel" in expense_type:
         st.markdown("<div style='background-color: #eff6ff; padding: 15px; border-radius: 10px; border: 1px solid #bfdbfe; margin-top: 10px;'>", unsafe_allow_html=True)
         st.markdown("<h4 style='color: #1e40af !important; margin-bottom: 10px;'>⛽ Fuel Consumption Calculator Matrix</h4>", unsafe_allow_html=True)
         f_col1, f_col2 = st.columns(2)
@@ -111,10 +111,10 @@ with tab1:
             km_driven = st.number_input("Kilometers Driven (km):", min_value=0.0, value=0.0, step=1.0)
         st.markdown("</div>", unsafe_allow_html=True)
 
-    st.write(" ")
-    add_button = st.button("Add Expense to Log ✨", use_container_width=True)
+        st.write(" ")
+        add_button = st.button("Add Expense to Log ✨", use_container_width=True)
 
-    if add_button:
+if add_button:
         if car_model.strip() == "" or expense_amount <= 0:
             st.error("⚠️ Please enter the vehicle model and ensure the amount is greater than 0!")
         else:
@@ -178,16 +178,15 @@ with tab2:
         
         if selected_category != "All Categories":
             filtered_df = filtered_df[filtered_df["Expense Category"] == selected_category]
-            
         if search_query.strip() != "":
             filtered_df = filtered_df[filtered_df["Vehicle Model"].str.contains(search_query, case=False, na=False)]
             
         filtered_df = filtered_df[(filtered_df['parsed_date'] >= start_date) & (filtered_df['parsed_date'] <= end_date)]
         filtered_df = filtered_df.drop(columns=['parsed_date'])
+
         st.write("---")
         
         if not filtered_df.empty:
-            # 📊 METRİK KARTLARI (Key Performance Indicators)
             total_cost = filtered_df["Amount ($)"].sum()
             total_km = filtered_df["Km Driven"].sum()
             total_liters = filtered_df["Liters (L)"].sum()
@@ -219,7 +218,6 @@ with tab2:
             st.write("---")
             st.markdown("#### 📊 Advanced Expense Analytics Horizon")
             
-            # Qrafiklər üçün 2 sütunlu görünüş
             g_col1, g_col2 = st.columns(2)
             
             with g_col1:
@@ -232,7 +230,6 @@ with tab2:
                 model_chart = filtered_df.groupby("Vehicle Model")["Amount ($)"].sum()
                 st.bar_chart(model_chart)
 
-            # Zaman xətti (Line chart)
             st.markdown("<p style='font-weight: bold; color: #1e3a8a; margin-top: 20px;'>Spending Timeline Trend</p>", unsafe_allow_html=True)
             timeline_chart = filtered_df.groupby("Date")["Amount ($)"].sum()
             st.line_chart(timeline_chart)
@@ -242,31 +239,34 @@ with tab2:
     else:
         st.info("💡 No expenses registered in the database yet. Add your first expense using the 'Add Expense' tab.")
 
-# --- TAB 3: SƏNƏDLƏR VƏ XƏBƏRDARLIQLAR ---
+# --- TAB 3: SƏNƏDLƏR VƏ XƏBƏRDARLIQLAR (FORM İLƏ TƏKMİLLƏŞDİRİLDİ) ---
 with tab3:
     st.markdown("### 📜 Document & Expiry Alerts Matrix")
     st.markdown("<p style='color: #475569; font-size: 14px;'>Track your vehicle insurance, technical inspections, and critical document expiry dates with automated alerts.</p>", unsafe_allow_html=True)
 
-    doc_col1, doc_col2 = st.columns(2)
-    with doc_col1:
-        doc_car_model = st.text_input("Vehicle Model for Document:", placeholder="e.g., Prius, BMW", key="doc_car")
-        doc_name = st.selectbox("Document Type:", ["Insurance 📜", "Technical Inspection 🔍", "Road Tax 🛣️", "Other 📄"])
-    with doc_col2:
-        doc_expiry_date = st.date_input("Document Expiry Date:", datetime.date.today() + datetime.timedelta(days=30))
-        st.write("") 
-        st.write("")
-        add_doc_button = st.button("Add Document Alert 🔔", use_container_width=True)
+    # st.form istifadə edərək təkrar kliklərin və dublikatların qarşısı alınır
+    with st.form("document_form", clear_on_submit=True):
+        doc_col1, doc_col2 = st.columns(2)
+        with doc_col1:
+            doc_car_model = st.text_input("Vehicle Model for Document:", placeholder="e.g., Prius, BMW")
+            doc_name = st.selectbox("Document Type:", ["Insurance 📜", "Technical Inspection 🔍", "Road Tax 🛣️", "Other 📄"])
+        with doc_col2:
+            doc_expiry_date = st.date_input("Document Expiry Date:", datetime.date.today() + datetime.timedelta(days=30))
+            st.write("") 
+            st.write("")
+            add_doc_button = st.form_submit_button("Add Document Alert 🔔", use_container_width=True)
 
     if add_doc_button:
         if doc_car_model.strip() == "":
             st.error("⚠️ Please enter the vehicle model for the document!")
-    else:
+        else:
             cursor.execute('''
                 INSERT INTO vehicle_documents (vehicle_model, doc_name, expiry_date)
                 VALUES (?, ?, ?)
             ''', (doc_car_model.strip(), doc_name, str(doc_expiry_date)))
             conn.commit()
             st.success("✅ Document alert successfully added to database!")
+            st.rerun()
 
     docs_df = pd.read_sql_query("""
         SELECT id, vehicle_model AS 'Vehicle Model', 
