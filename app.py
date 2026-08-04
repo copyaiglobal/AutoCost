@@ -7,7 +7,7 @@ import sqlite3
 conn = sqlite3.connect('autocost.db', check_same_thread=False)
 cursor = conn.cursor()
 
-# Cədvəl mövcud deyilsə, avtomatik yaradırıq
+# Cədvəllərin yaradılması (Xərclər və Sənədlər)
 cursor.execute('''
     CREATE TABLE IF NOT EXISTS expenses (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -20,10 +20,19 @@ cursor.execute('''
         cost_per_100km REAL
     )
 ''')
+
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS vehicle_documents (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        vehicle_model TEXT,
+        doc_name TEXT,
+        expiry_date TEXT
+    )
+''')
 conn.commit()
 
 # --- 🎨 AUTOCOST LÜKS AĞ REJİMİ VƏ PEŞƏKAR VİZUAL AYARLAR ---
-st.set_page_config(page_title="AutoCost - Car Expenses Log", page_icon="🚗", layout="centered")
+st.set_page_config(page_title="AutoCost - Car Expenses & Documents Log", page_icon="🚗", layout="centered")
 
 st.markdown("""
 <style>
@@ -68,20 +77,21 @@ input::placeholder { color: #94a3b8 !important; opacity: 1 !important; -webkit-t
 """, unsafe_allow_html=True)
 
 # --- 👑 BAŞLIQ PANƏLİ ---
-st.markdown("<h2>🚗 AutoCost — Car Expenses Log</h2>", unsafe_allow_html=True)
-st.markdown("<p style='color: #475569; font-size: 15px;'>Smart financial vehicle diary tailored for modern drivers. Track your fuel consumption, unexpected repairs, and insurance assets with detailed matrix analytics loops.</p>", unsafe_allow_html=True)
+st.markdown("<h2>🚗 AutoCost — Car Expenses & Documents Diary</h2>", unsafe_allow_html=True)
+st.markdown("<p style='color: #475569; font-size: 15px;'>Smart financial vehicle diary tailored for modern drivers. Track your fuel consumption, unexpected repairs, insurance assets, and critical document expiration alerts.</p>", unsafe_allow_html=True)
 st.write("---")
 
-# --- 📥 DRIVER INPUT FIELDS ---
+# --- 📥 DRIVER INPUT FIELDS (EXPENSES) ---
+st.markdown("### 💰 1. Log Vehicle Expense")
 col1, col2 = st.columns(2)
 
 with col1:
-    car_model = st.text_input("1. Vehicle Model / Brand:", placeholder="e.g., Prius, Mercedes, Hyundai")
-    expense_type = st.selectbox("2. Expense Category:", ["Fuel ⛽", "Repair 🔧", "Insurance 📜", "Other 📦"])
+    car_model = st.text_input("Vehicle Model / Brand:", placeholder="e.g., Prius, Mercedes, Hyundai")
+    expense_type = st.selectbox("Expense Category:", ["Fuel ⛽", "Repair 🔧", "Insurance 📜", "Other 📦"])
 
 with col2:
-    expense_amount = st.number_input("3. Expense Amount ($):", min_value=0.0, value=0.0, step=1.0)
-    expense_date = st.date_input("4. Transaction Date:", datetime.date.today())
+    expense_amount = st.number_input("Expense Amount ($):", min_value=0.0, value=0.0, step=1.0)
+    expense_date = st.date_input("Transaction Date:", datetime.date.today())
 
 # --- ⛽ DİNAMİK YANACAQ HESABLAYICI SAHƏLƏRİ ---
 fuel_liters = 0.0
@@ -91,15 +101,16 @@ if "Fuel" in expense_type:
     st.markdown("<div style='background-color: #eff6ff; padding: 15px; border-radius: 10px; border: 1px solid #bfdbfe; margin-top: 10px;'>", unsafe_allow_html=True)
     st.markdown("<h4 style='color: #1e40af !important; margin-bottom: 10px;'>⛽ Fuel Consumption Calculator Matrix</h4>", unsafe_allow_html=True)
     f_col1, f_col2 = st.columns(2)
-    with f_col1:
+with f_col1:
         fuel_liters = st.number_input("Fuel Liters (L):", min_value=0.0, value=0.0, step=0.5)
-    with f_col2:
-        km_driven = st.number_input("Kilometers Driven (km):", min_value=0.0, value=0.0, step=1.0)
-    st.markdown("</div>", unsafe_allow_html=True)
+        with f_col2:
+            km_driven = st.number_input("Kilometers Driven (km):", min_value=0.0, value=0.0, step=1.0)
+        st.markdown("</div>", unsafe_allow_html=True)
 
 st.write(" ")
 add_button = st.button("Add Expense to Log ✨", use_container_width=True)
 st.write("---")
+
 if add_button:
     if car_model.strip() == "" or expense_amount <= 0:
         st.error("⚠️ Please enter the vehicle model and ensure the amount is greater than 0!")
@@ -122,7 +133,71 @@ if add_button:
         else:
             st.success("✅ Expense successfully logged to your database diary!")
 
-# --- 📊 BAZADAN MƏLUMATLARIN OXUNMASI ---
+# --- 📜 4. DOCUMENT & EXPIRY ALERTS MATRIX ---
+st.markdown("### 📜 4. Document & Expiry Alerts Matrix (Inspection & Insurance)")
+st.markdown("<p style='color: #475569; font-size: 14px;'>Track your vehicle insurance, technical inspections, and critical document expiry dates with automated alerts.</p>", unsafe_allow_html=True)
+
+doc_col1, doc_col2 = st.columns(2)
+with doc_col1:
+    doc_car_model = st.text_input("Vehicle Model for Document:", placeholder="e.g., Prius, BMW", key="doc_car")
+    doc_name = st.selectbox("Document Type:", ["Insurance 📜", "Technical Inspection 🔍", "Road Tax 🛣️", "Other 📄"])
+with doc_col2:
+    doc_expiry_date = st.date_input("Document Expiry Date:", datetime.date.today() + datetime.timedelta(days=30))
+    st.write("") 
+    st.write("")
+    add_doc_button = st.button("Add Document Alert 🔔", use_container_width=True)
+
+if add_doc_button:
+    if doc_car_model.strip() == "":
+        st.error("⚠️ Please enter the vehicle model for the document!")
+    else:
+        cursor.execute('''
+            INSERT INTO vehicle_documents (vehicle_model, doc_name, expiry_date)
+            VALUES (?, ?, ?)
+        ''', (doc_car_model.strip(), doc_name, str(doc_expiry_date)))
+        conn.commit()
+        st.success("✅ Document alert successfully added to database!")
+
+# Fetch and display documents
+docs_df = pd.read_sql_query("""
+    SELECT id, vehicle_model AS 'Vehicle Model', 
+           doc_name AS 'Document Type', 
+           expiry_date AS 'Expiry Date' 
+    FROM vehicle_documents
+""", conn)
+
+if not docs_df.empty:
+    st.write("#### Registered Documents & Status Horizon")
+    today = datetime.date.today()
+    
+    status_list = []
+    days_left_list = []
+    for idx, row in docs_df.iterrows():
+        exp_date = datetime.datetime.strptime(row['Expiry Date'], "%Y-%m-%d").date()
+        days_left = (exp_date - today).days
+        days_left_list.append(days_left)
+        if days_left < 0:
+            status_list.append("🔴 Expired")
+        elif days_left <= 30:
+            status_list.append(f"⚠️ Expiring Soon ({days_left} days left)")
+        else:
+            status_list.append(f"🟢 Valid ({days_left} days left)")
+            
+    docs_display = docs_df.copy()
+    docs_display['Status'] = status_list
+    
+    st.table(docs_display[['Vehicle Model', 'Document Type', 'Expiry Date', 'Status']])
+expired_count = sum(1 for d in days_left_list if d < 0)
+soon_count = sum(1 for d in days_left_list if 0 <= d <= 30)
+    
+if expired_count > 0:
+        st.error(f"🚨 Attention! You have {expired_count} expired document(s)! Please renew them immediately.")
+if soon_count > 0:
+        st.warning(f"⚠️ Warning! You have {soon_count} document(s) expiring within the next 30 days.")
+
+st.write("---")
+
+# --- 📊 BAZADAN MƏLUMATLARIN OXUNMASI & FİLTRLƏMƏ ---
 df = pd.read_sql_query("""
     SELECT vehicle_model AS 'Vehicle Model', 
            expense_type AS 'Expense Category', 
@@ -161,7 +236,6 @@ if not df.empty:
         st.write("### 📋 Current Vehicle Expenses Log Matrix (SQLite Database)")
         df_display = filtered_df.copy()
         
-        # DÜZƏLİŞ: Lambda ifadəsi ilə rəqəmlərin formatlanması xətanı tamamilə aradan qaldırır
         df_display["Amount ($)"] = df_display["Amount ($)"].map(lambda x: f"{x:,.2f}")
         df_display["Cost/100km ($)"] = df_display["Cost/100km ($)"].map(lambda x: f"{x:,.2f}")
         df_display["Liters (L)"] = df_display["Liters (L)"].map(lambda x: f"{x:,.2f}")
