@@ -1,5 +1,7 @@
 import streamlit as st
+import datetime
 from supabase import create_client
+
 
 # Açarları təhlükəsiz oxumaq üçün universal üsul
 # --- 🔐 SUPABASE BEYNƏLXALQ BAĞLANTI SİSTEMİ (0% XƏTA ZƏMANƏTLİ 🎉) ---
