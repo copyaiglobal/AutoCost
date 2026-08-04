@@ -92,29 +92,29 @@ with tab1:
     col1, col2 = st.columns(2)
 
     with col1:
-        car_model = st.text_input("Vehicle Model / Brand:", placeholder="e.g., Prius, Mercedes, Hyundai")
-        expense_type = st.selectbox("Expense Category:", ["Fuel ⛽", "Repair 🔧", "Insurance 📜", "Other 📦"])
+        car_model = st.text_input("Vehicle Model / Brand:", placeholder="e.g., Prius, Mercedes, Hyundai", key="car_model_input")
+        expense_type = st.selectbox("Expense Category:", ["Fuel ⛽", "Repair 🔧", "Insurance 📜", "Other 📦"], key="expense_type_select")
 
     with col2:
-        expense_amount = st.number_input("Expense Amount ($):", min_value=0.0, value=0.0, step=1.0)
-        expense_date = st.date_input("Transaction Date:", datetime.date.today())
+        expense_amount = st.number_input("Expense Amount ($):", min_value=0.0, value=0.0, step=1.0, key="expense_amount_input")
+        expense_date = st.date_input("Transaction Date:", datetime.date.today(), key="expense_date_input")
 
     fuel_liters = 0.0
     km_driven = 0.0
-if "Fuel" in expense_type:
+    if "Fuel" in expense_type:
         st.markdown("<div style='background-color: #eff6ff; padding: 15px; border-radius: 10px; border: 1px solid #bfdbfe; margin-top: 10px;'>", unsafe_allow_html=True)
         st.markdown("<h4 style='color: #1e40af !important; margin-bottom: 10px;'>⛽ Fuel Consumption Calculator Matrix</h4>", unsafe_allow_html=True)
         f_col1, f_col2 = st.columns(2)
         with f_col1:
-            fuel_liters = st.number_input("Fuel Liters (L):", min_value=0.0, value=0.0, step=0.5)
+            fuel_liters = st.number_input("Fuel Liters (L):", min_value=0.0, value=0.0, step=0.5, key="fuel_liters_input")
         with f_col2:
-            km_driven = st.number_input("Kilometers Driven (km):", min_value=0.0, value=0.0, step=1.0)
+            km_driven = st.number_input("Kilometers Driven (km):", min_value=0.0, value=0.0, step=1.0, key="km_driven_input")
         st.markdown("</div>", unsafe_allow_html=True)
 
-        st.write(" ")
-        add_button = st.button("Add Expense to Log ✨", use_container_width=True)
+    st.write(" ")
+    add_button = st.button("Add Expense to Log ✨", use_container_width=True, key="add_expense_button")
 
-if add_button:
+    if add_button:
         if car_model.strip() == "" or expense_amount <= 0:
             st.error("⚠️ Please enter the vehicle model and ensure the amount is greater than 0!")
         else:
@@ -157,10 +157,10 @@ with tab2:
         
         with f_col1:
             categories = ["All Categories"] + list(df["Expense Category"].unique())
-            selected_category = st.selectbox("Filter by Category:", categories)
+            selected_category = st.selectbox("Filter by Category:", categories, key="filter_category_select")
             
         with f_col2:
-            search_query = st.text_input("Search by Vehicle Model:", placeholder="Type model name...")
+            search_query = st.text_input("Search by Vehicle Model:", placeholder="Type model name...", key="search_model_input")
 
         st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
         d_col1, d_col2 = st.columns(2)
@@ -170,16 +170,16 @@ with tab2:
         max_d = df['parsed_date'].max()
 
         with d_col1:
-            start_date = st.date_input("Start Date Horizon:", value=min_d, min_value=min_d, max_value=max_d)
+            start_date = st.date_input("Start Date Horizon:", value=min_d, min_value=min_d, max_value=max_d, key="start_date_input")
         with d_col2:
-            end_date = st.date_input("End Date Horizon:", value=max_d, min_value=min_d, max_value=max_d)
+            end_date = st.date_input("End Date Horizon:", value=max_d, min_value=min_d, max_value=max_d, key="end_date_input")
 
-        filtered_df = df.copy()
-        
-        if selected_category != "All Categories":
-            filtered_df = filtered_df[filtered_df["Expense Category"] == selected_category]
-        if search_query.strip() != "":
-            filtered_df = filtered_df[filtered_df["Vehicle Model"].str.contains(search_query, case=False, na=False)]
+            filtered_df = df.copy()
+            if selected_category != "All Categories":
+                filtered_df = filtered_df[filtered_df["Expense Category"] == selected_category]
+            
+            if search_query.strip() != "":
+                filtered_df = filtered_df[filtered_df["Vehicle Model"].str.contains(search_query, case=False, na=False)]
             
         filtered_df = filtered_df[(filtered_df['parsed_date'] >= start_date) & (filtered_df['parsed_date'] <= end_date)]
         filtered_df = filtered_df.drop(columns=['parsed_date'])
@@ -212,7 +212,8 @@ with tab2:
                 data=filtered_df.to_csv(index=False).encode("utf-8-sig"),
                 file_name="autocost_filtered_report.csv",
                 mime="text/csv",
-                use_container_width=True
+                use_container_width=True,
+                key="download_csv_btn"
             )
             
             st.write("---")
@@ -239,12 +240,11 @@ with tab2:
     else:
         st.info("💡 No expenses registered in the database yet. Add your first expense using the 'Add Expense' tab.")
 
-# --- TAB 3: SƏNƏDLƏR VƏ XƏBƏRDARLIQLAR (FORM İLƏ TƏKMİLLƏŞDİRİLDİ) ---
+# --- TAB 3: SƏNƏDLƏR VƏ XƏBƏRDARLIQLAR ---
 with tab3:
     st.markdown("### 📜 Document & Expiry Alerts Matrix")
     st.markdown("<p style='color: #475569; font-size: 14px;'>Track your vehicle insurance, technical inspections, and critical document expiry dates with automated alerts.</p>", unsafe_allow_html=True)
 
-    # st.form istifadə edərək təkrar kliklərin və dublikatların qarşısı alınır
     with st.form("document_form", clear_on_submit=True):
         doc_col1, doc_col2 = st.columns(2)
         with doc_col1:
