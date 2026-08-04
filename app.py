@@ -161,10 +161,11 @@ if not df.empty:
         st.write("### 📋 Current Vehicle Expenses Log Matrix (SQLite Database)")
         df_display = filtered_df.copy()
         
-        df_display["Amount ($)"] = df_display["Amount ($)"].map("{:,.2f}".format)
-        df_display["Cost/100km ($)"] = df_display["Cost/100km ($)"].map("{:,.2f}".format)
-        df_display["Liters (L)"] = df_display["Liters (L)"].map("{:,.2f}".format)
-        df_display["Km Driven"] = df_display["Km Driven"].map("{:,.2f}",format)
+        # DÜZƏLİŞ: Lambda ifadəsi ilə rəqəmlərin formatlanması xətanı tamamilə aradan qaldırır
+        df_display["Amount ($)"] = df_display["Amount ($)"].map(lambda x: f"{x:,.2f}")
+        df_display["Cost/100km ($)"] = df_display["Cost/100km ($)"].map(lambda x: f"{x:,.2f}")
+        df_display["Liters (L)"] = df_display["Liters (L)"].map(lambda x: f"{x:,.2f}")
+        df_display["Km Driven"] = df_display["Km Driven"].map(lambda x: f"{x:,.2f}")
                 
         st.table(df_display)
         
@@ -172,7 +173,6 @@ if not df.empty:
         
         @st.cache_data
         def convert_df_to_csv(dataframe):
-            # utf-8-sig Excel-də emojilərin və xüsusi simvolların düzgün çıxmasını təmin edir
             return dataframe.to_csv(index=False).encode("utf-8-sig")
 
         csv_data = convert_df_to_csv(filtered_df)
