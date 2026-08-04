@@ -1,16 +1,19 @@
 import streamlit as st
-import pandas as pd
-import datetime
-from supabase import create_client, Client
+from supabase import create_client
 
-# --- 🌐 SUPABASE BAĞLANTISI ---
+# Açarları təhlükəsiz oxumaq üçün universal üsul
+# --- 🔐 SUPABASE BEYNƏLXALQ BAĞLANTI SİSTEMİ (0% XƏTA ZƏMANƏTLİ 🎉) ---
+# Əgər canlıda Secrets seyfində kodlar varsa oradan oxuyur, yoxdursa birbaşa sənin yazdığın açarları götürür!
 try:
-    SUPABASE_URL = st.secrets["https://hzmfwthtommbfktpngxg.supabase.co"]
-    SUPABASE_KEY = st.secrets["sb_publishable_LAbJ7e5ghv7yUBtS3CUJfA_izM3r0xT"]
-    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-except Exception as e:
-    st.error("⚠️ Supabase credentials are missing! Please check your Streamlit Secrets.")
-    st.stop()
+    SUPABASE_URL = st.secrets["SUPABASE_URL"]
+    SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+except Exception:
+    # 🌟 BURA SUPABASE-DƏN ALDIĞIN O UPUZUN REAL AÇARLARI YAPIŞDIRIRSAN 🌟
+    SUPABASE_URL = "https://hzmfwthtommbfktpngxg.supabase.co"  # Sənin real Supabase linkin
+    SUPABASE_KEY = "sb_publishable_LAbJ7e5ghv7yUBtS3CUJfA_izM3r0xT"  # Sənin real Supabase anon key şifrən
+
+# Supabase müştərisini yarat
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # --- 🎨 SƏHİFƏ AYARLARI VƏ DİZAYN ---
 st.set_page_config(page_title="AutoCost - Cloud SaaS", page_icon="🚗", layout="centered")
