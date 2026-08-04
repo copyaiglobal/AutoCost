@@ -118,7 +118,7 @@ if add_button:
         conn.commit()
         
         if "Fuel" in expense_type and km_driven > 0:
-            st.success(f"✅ Fuel logged to database! 100 km-ə sərfiyyat: {cost_per_100km:.2f} $ ({liters_per_100km:.2f} L / 100km)")
+            st.success(f"✅ Fuel logged to database! Cost per 100km: {cost_per_100km:.2f} $ ({liters_per_100km:.2f} L / 100km)")
         else:
             st.success("✅ Expense successfully logged to your database diary!")
 
@@ -139,15 +139,12 @@ if not df.empty:
     f_col1, f_col2 = st.columns(2)
     
     with f_col1:
-        # Kateqoriya filtri
         categories = ["All Categories"] + list(df["Expense Category"].unique())
         selected_category = st.selectbox("Filter by Category:", categories)
         
     with f_col2:
-        # Model üzrə axtarış
         search_query = st.text_input("Search by Vehicle Model:", placeholder="Type model name...")
 
-    # Filtrləmə məntiqi
     filtered_df = df.copy()
     if selected_category != "All Categories":
         filtered_df = filtered_df[filtered_df["Expense Category"] == selected_category]
@@ -167,7 +164,7 @@ if not df.empty:
         df_display["Amount ($)"] = df_display["Amount ($)"].map("{:,.2f}".format)
         df_display["Cost/100km ($)"] = df_display["Cost/100km ($)"].map("{:,.2f}".format)
         df_display["Liters (L)"] = df_display["Liters (L)"].map("{:,.2f}".format)
-        df_display["Km Driven"] = df_display["Km Driven"].map("{:,.2f}".format)
+        df_display["Km Driven"] = df_display["Km Driven"].map("{:,.2f}",format)
                 
         st.table(df_display)
         
@@ -175,14 +172,15 @@ if not df.empty:
         
         @st.cache_data
         def convert_df_to_csv(dataframe):
-            return dataframe.to_csv(index=False).encode("utf-8")
+            # utf-8-sig Excel-də emojilərin və xüsusi simvolların düzgün çıxmasını təmin edir
+            return dataframe.to_csv(index=False).encode("utf-8-sig")
 
         csv_data = convert_df_to_csv(filtered_df)
         
         st.download_button(
-            label="📥 Filtrlənmiş Xərcləri Excel / CSV olaraq yüklə",
+            label="📥 Download Filtered Expenses as Excel / CSV",
             data=csv_data,
-            file_name="autocost_filtrlənmiş_hesabat.csv",
+            file_name="autocost_filtered_report.csv",
             mime="text/csv",
             use_container_width=True
         )
