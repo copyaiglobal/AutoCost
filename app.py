@@ -1,6 +1,26 @@
 import streamlit as st
 import pandas as pd
 import datetime
+import sqlite3
+
+# --- 🗄️ MƏLUMAT BAZASI BAĞLANTISI (SQLite) ---
+conn = sqlite3.connect('autocost.db', check_same_thread=False)
+cursor = conn.cursor()
+
+# Cədvəl mövcud deyilsə, avtomatik yaradırıq
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS expenses (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        vehicle_model TEXT,
+        expense_type TEXT,
+        amount REAL,
+        date TEXT,
+        fuel_liters REAL,
+        km_driven REAL,
+        cost_per_100km REAL
+    )
+''')
+conn.commit()
 
 # --- 🎨 AUTOCOST LÜKS AĞ REJİMİ VƏ PEŞƏKAR VİZUAL AYARLAR ---
 st.set_page_config(page_title="AutoCost - Car Expenses Log", page_icon="🚗", layout="centered")
@@ -52,10 +72,6 @@ st.markdown("<h2>🚗 AutoCost — Car Expenses Log</h2>", unsafe_allow_html=Tru
 st.markdown("<p style='color: #475569; font-size: 15px;'>Smart financial vehicle diary tailored for modern drivers. Track your fuel consumption, unexpected repairs, and insurance assets with detailed matrix analytics loops.</p>", unsafe_allow_html=True)
 st.write("---")
 
-# --- 💾 DAXİLİ YADDAŞ (SESSION STATE) SİSTEMİ ---
-if "expenses_list" not in st.session_state:
-    st.session_state["expenses_list"] = []
-
 # --- 📥 DRIVER INPUT FIELDS ---
 col1, col2 = st.columns(2)
 
@@ -84,50 +100,52 @@ if "Fuel" in expense_type:
 st.write(" ")
 add_button = st.button("Add Expense to Log ✨", use_container_width=True)
 st.write("---")
-
 if add_button:
     if car_model.strip() == "" or expense_amount <= 0:
         st.error("⚠️ Please enter the vehicle model and ensure the amount is greater than 0!")
     else:
         cost_per_100km = 0.0
         liters_per_100km = 0.0
-if "Fuel" in expense_type and km_driven > 0:
+        if "Fuel" in expense_type and km_driven > 0:
             cost_per_100km = (expense_amount / km_driven) * 100
             if fuel_liters > 0:
                 liters_per_100km = (fuel_liters / km_driven) * 100
         
-            new_data = {
-            "Vehicle Model": car_model.strip(),
-            "Expense Category": expense_type,
-            "Amount ($)": expense_amount,
-            "Date": str(expense_date),
-            "Liters (L)": fuel_liters if "Fuel" in expense_type else 0.0,
-            "Km Driven": km_driven if "Fuel" in expense_type else 0.0,
-            "Cost/100km ($)": round(cost_per_100km, 2) if "Fuel" in expense_type else 0.0
-        }
+        # Məlumatı birbaşa SQLite bazasına daxil edirik
+        cursor.execute('''
+            INSERT INTO expenses (vehicle_model, expense_type, amount, date, fuel_liters, km_driven, cost_per_100km)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (car_model.strip(), expense_type, expense_amount, str(expense_date), fuel_liters, km_driven, round(cost_per_100km, 2)))
+        conn.commit()
         
-        # DÜZƏLİŞ: Birbaşa st.session_state-ə əlavə edirik
-            st.session_state["expenses_list"].append(new_data)
-        
-            if "Fuel" in expense_type and km_driven > 0:
-                st.success(f"✅ Fuel logged! 100 km-ə sərfiyyat: {cost_per_100km:.2f} $ ({liters_per_100km:.2f} L / 100km)")
-            else:
-                st.success("✅ Expense successfully logged to your diary!")
+        if "Fuel" in expense_type and km_driven > 0:
+            st.success(f"✅ Fuel logged to database! 100 km-ə sərfiyyat: {cost_per_100km:.2f} $ ({liters_per_100km:.2f} L / 100km)")
+        else:
+            st.success("✅ Expense successfully logged to your database diary!")
 
-# --- 📊 LIVE EXPENSE TRACKING MATRIX ---
-if st.session_state["expenses_list"]:
-    df = pd.DataFrame(st.session_state["expenses_list"])
+# --- 📊 BAZADAN MƏLUMATLARIN OXUNMASI VƏ İZLƏMƏ MATRİXİ ---
+df = pd.read_sql_query("""
+    SELECT vehicle_model AS 'Vehicle Model', 
+           expense_type AS 'Expense Category', 
+           amount AS 'Amount ($)', 
+           date AS 'Date', 
+           fuel_liters AS 'Liters (L)', 
+           km_driven AS 'Km Driven', 
+           cost_per_100km AS 'Cost/100km ($)' 
+    FROM expenses
+""", conn)
+
+if not df.empty:
     total_cost = df["Amount ($)"].sum()
     chart_data = df.groupby("Expense Category")["Amount ($)"].sum()
     
-    st.write("### 📋 Current Vehicle Expenses Log Matrix")
+    st.write("### 📋 Current Vehicle Expenses Log Matrix (SQLite Database)")
     df_display = df.copy()
     
     df_display["Amount ($)"] = df_display["Amount ($)"].map("{:,.2f}".format)
-    if "Cost/100km ($)" in df_display.columns:
-        df_display["Cost/100km ($)"] = df_display["Cost/100km ($)"].map("{:,.2f}".format)
-        df_display["Liters (L)"] = df_display["Liters (L)"].map("{:,.2f}".format)
-        df_display["Km Driven"] = df_display["Km Driven"].map("{:,.2f}".format)
+    df_display["Cost/100km ($)"] = df_display["Cost/100km ($)"].map("{:,.2f}".format)
+    df_display["Liters (L)"] = df_display["Liters (L)"].map("{:,.2f}".format)
+    df_display["Km Driven"] = df_display["Km Driven"].map("{:,.2f}".format)
             
     st.table(df_display)
     
@@ -151,4 +169,4 @@ if st.session_state["expenses_list"]:
     st.write("### 📊 Expense Distribution Analytics Horizon")
     st.bar_chart(chart_data)
 else:
-    st.info("💡 No expenses registered yet. Input your core parameters above to initialize track logs.")
+    st.info("💡 No expenses registered in the database yet. Input your core parameters above to initialize track logs.")
