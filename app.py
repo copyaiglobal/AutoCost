@@ -101,11 +101,11 @@ if "Fuel" in expense_type:
     st.markdown("<div style='background-color: #eff6ff; padding: 15px; border-radius: 10px; border: 1px solid #bfdbfe; margin-top: 10px;'>", unsafe_allow_html=True)
     st.markdown("<h4 style='color: #1e40af !important; margin-bottom: 10px;'>⛽ Fuel Consumption Calculator Matrix</h4>", unsafe_allow_html=True)
     f_col1, f_col2 = st.columns(2)
-with f_col1:
+    with f_col1:
         fuel_liters = st.number_input("Fuel Liters (L):", min_value=0.0, value=0.0, step=0.5)
-        with f_col2:
-            km_driven = st.number_input("Kilometers Driven (km):", min_value=0.0, value=0.0, step=1.0)
-        st.markdown("</div>", unsafe_allow_html=True)
+    with f_col2:
+        km_driven = st.number_input("Kilometers Driven (km):", min_value=0.0, value=0.0, step=1.0)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 st.write(" ")
 add_button = st.button("Add Expense to Log ✨", use_container_width=True)
@@ -166,12 +166,13 @@ docs_df = pd.read_sql_query("""
     FROM vehicle_documents
 """, conn)
 
+days_left_list = []
+
 if not docs_df.empty:
     st.write("#### Registered Documents & Status Horizon")
     today = datetime.date.today()
     
     status_list = []
-    days_left_list = []
     for idx, row in docs_df.iterrows():
         exp_date = datetime.datetime.strptime(row['Expiry Date'], "%Y-%m-%d").date()
         days_left = (exp_date - today).days
@@ -187,13 +188,13 @@ if not docs_df.empty:
     docs_display['Status'] = status_list
     
     st.table(docs_display[['Vehicle Model', 'Document Type', 'Expiry Date', 'Status']])
+
 expired_count = sum(1 for d in days_left_list if d < 0)
 soon_count = sum(1 for d in days_left_list if 0 <= d <= 30)
-    
 if expired_count > 0:
-        st.error(f"🚨 Attention! You have {expired_count} expired document(s)! Please renew them immediately.")
+    st.error(f"🚨 Attention! You have {expired_count} expired document(s)! Please renew them immediately.")
 if soon_count > 0:
-        st.warning(f"⚠️ Warning! You have {soon_count} document(s) expiring within the next 30 days.")
+    st.warning(f"⚠️ Warning! You have {soon_count} document(s) expiring within the next 30 days.")
 
 st.write("---")
 
