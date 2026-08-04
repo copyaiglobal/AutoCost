@@ -136,10 +136,10 @@ with tab1:
             else:
                 st.success("✅ Expense successfully logged to your database diary!")
 
-# --- TAB 2: FİLTR, AXTARIŞ, CƏDVƏL VƏ ANALİTİKA ---
+# --- TAB 2: FİLTR, AXTARIŞ, TARİX ARALIĞI VƏ ANALİTİKA ---
 with tab2:
     st.markdown("### 🔍 Filter, Search & Analytics Horizon")
-    st.markdown("<p style='color: #475569; font-size: 14px;'>Filter your records by category, search by vehicle model, export reports, and view spending charts.</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #475569; font-size: 14px;'>Filter your records by category, search by model, select custom date ranges, and view analytics.</p>", unsafe_allow_html=True)
 
     df = pd.read_sql_query("""
         SELECT vehicle_model AS 'Vehicle Model', 
@@ -162,13 +162,30 @@ with tab2:
         with f_col2:
             search_query = st.text_input("Search by Vehicle Model:", placeholder="Type model name...")
 
+        # Tarix aralığı seçimi üçün sətir
+        st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
+        d_col1, d_col2 = st.columns(2)
+        
+        df['parsed_date'] = pd.to_datetime(df['Date']).dt.date
+        min_d = df['parsed_date'].min()
+        max_d = df['parsed_date'].max()
+
+        with d_col1:
+            start_date = st.date_input("Start Date Horizon:", value=min_d, min_value=min_d, max_value=max_d)
+        with d_col2:
+            end_date = st.date_input("End Date Horizon:", value=max_d, min_value=min_d, max_value=max_d)
+
         filtered_df = df.copy()
+        
+        # Filtr tətbiqləri
         if selected_category != "All Categories":
             filtered_df = filtered_df[filtered_df["Expense Category"] == selected_category]
             
         if search_query.strip() != "":
             filtered_df = filtered_df[filtered_df["Vehicle Model"].str.contains(search_query, case=False, na=False)]
-
+            
+        filtered_df = filtered_df[(filtered_df['parsed_date'] >= start_date) & (filtered_df['parsed_date'] <= end_date)]
+        filtered_df = filtered_df.drop(columns=['parsed_date'])
         st.write("---")
         
         if not filtered_df.empty:
@@ -205,7 +222,7 @@ with tab2:
             st.markdown("#### 📊 Expense Distribution Analytics Horizon")
             st.bar_chart(chart_data)
         else:
-            st.warning("⚠️ No records found matching your filter or search criteria.")
+            st.warning("⚠️ No records found matching your filter, search or date range criteria.")
     else:
         st.info("💡 No expenses registered in the database yet. Add your first expense using the 'Add Expense' tab.")
 
@@ -268,3 +285,8 @@ with tab3:
 
     expired_count = sum(1 for d in days_left_list if d < 0)
     soon_count = sum(1 for d in days_left_list if 0 <= d <= 30)
+
+    if expired_count > 0:
+        st.error(f"🚨 Attention! You have {expired_count} expired document(s)! Please renew them immediately.")
+    if soon_count > 0:
+        st.warning(f"⚠️ Warning! You have {soon_count} document(s) expiring within the next 30 days.")
