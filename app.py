@@ -136,10 +136,10 @@ with tab1:
             else:
                 st.success("✅ Expense successfully logged to your database diary!")
 
-# --- TAB 2: FİLTR, AXTARIŞ, TARİX ARALIĞI VƏ ANALİTİKA ---
+# --- TAB 2: FİLTR, AXTARIŞ, TARİX ARALIĞI VƏ GENİŞLƏNDİRİLMİŞ ANALİTİKA ---
 with tab2:
-    st.markdown("### 🔍 Filter, Search & Analytics Horizon")
-    st.markdown("<p style='color: #475569; font-size: 14px;'>Filter your records by category, search by model, select custom date ranges, and view analytics.</p>", unsafe_allow_html=True)
+    st.markdown("### 🔍 Filter, Search & Advanced Analytics Horizon")
+    st.markdown("<p style='color: #475569; font-size: 14px;'>Filter records, select custom date ranges, explore key metrics, and analyze spending patterns.</p>", unsafe_allow_html=True)
 
     df = pd.read_sql_query("""
         SELECT vehicle_model AS 'Vehicle Model', 
@@ -162,7 +162,6 @@ with tab2:
         with f_col2:
             search_query = st.text_input("Search by Vehicle Model:", placeholder="Type model name...")
 
-        # Tarix aralığı seçimi üçün sətir
         st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
         d_col1, d_col2 = st.columns(2)
         
@@ -177,7 +176,6 @@ with tab2:
 
         filtered_df = df.copy()
         
-        # Filtr tətbiqləri
         if selected_category != "All Categories":
             filtered_df = filtered_df[filtered_df["Expense Category"] == selected_category]
             
@@ -189,9 +187,17 @@ with tab2:
         st.write("---")
         
         if not filtered_df.empty:
+            # 📊 METRİK KARTLARI (Key Performance Indicators)
             total_cost = filtered_df["Amount ($)"].sum()
-            chart_data = filtered_df.groupby("Expense Category")["Amount ($)"].sum()
+            total_km = filtered_df["Km Driven"].sum()
+            total_liters = filtered_df["Liters (L)"].sum()
             
+            m1, m2, m3 = st.columns(3)
+            m1.metric("💰 Total Expenditure", f"${total_cost:,.2f}")
+            m2.metric("🛣️ Total Distance", f"{total_km:,.1f} km")
+            m3.metric("⛽ Total Fuel", f"{total_liters:,.1f} L")
+            
+            st.write("---")
             st.markdown("#### 📋 Current Vehicle Expenses Log Matrix (SQLite Database)")
             df_display = filtered_df.copy()
             
@@ -202,25 +208,35 @@ with tab2:
                     
             st.table(df_display)
             
-            st.markdown(f"<h4 style='color: #2563eb !important;'>💰 Total Cumulative Vehicle Expenditure (Filtered): {total_cost:,.2f} $</h4>", unsafe_allow_html=True)
-            
-            @st.cache_data
-            def convert_df_to_csv(dataframe):
-                return dataframe.to_csv(index=False).encode("utf-8-sig")
-
-            csv_data = convert_df_to_csv(filtered_df)
-            
             st.download_button(
                 label="📥 Download Filtered Expenses as Excel / CSV",
-                data=csv_data,
+                data=filtered_df.to_csv(index=False).encode("utf-8-sig"),
                 file_name="autocost_filtered_report.csv",
                 mime="text/csv",
                 use_container_width=True
             )
             
             st.write("---")
-            st.markdown("#### 📊 Expense Distribution Analytics Horizon")
-            st.bar_chart(chart_data)
+            st.markdown("#### 📊 Advanced Expense Analytics Horizon")
+            
+            # Qrafiklər üçün 2 sütunlu görünüş
+            g_col1, g_col2 = st.columns(2)
+            
+            with g_col1:
+                st.markdown("<p style='font-weight: bold; color: #1e3a8a;'>By Category ($)</p>", unsafe_allow_html=True)
+                category_chart = filtered_df.groupby("Expense Category")["Amount ($)"].sum()
+                st.bar_chart(category_chart)
+                
+            with g_col2:
+                st.markdown("<p style='font-weight: bold; color: #1e3a8a;'>By Vehicle Model ($)</p>", unsafe_allow_html=True)
+                model_chart = filtered_df.groupby("Vehicle Model")["Amount ($)"].sum()
+                st.bar_chart(model_chart)
+
+            # Zaman xətti (Line chart)
+            st.markdown("<p style='font-weight: bold; color: #1e3a8a; margin-top: 20px;'>Spending Timeline Trend</p>", unsafe_allow_html=True)
+            timeline_chart = filtered_df.groupby("Date")["Amount ($)"].sum()
+            st.line_chart(timeline_chart)
+
         else:
             st.warning("⚠️ No records found matching your filter, search or date range criteria.")
     else:
@@ -244,7 +260,7 @@ with tab3:
     if add_doc_button:
         if doc_car_model.strip() == "":
             st.error("⚠️ Please enter the vehicle model for the document!")
-        else:
+    else:
             cursor.execute('''
                 INSERT INTO vehicle_documents (vehicle_model, doc_name, expiry_date)
                 VALUES (?, ?, ?)
