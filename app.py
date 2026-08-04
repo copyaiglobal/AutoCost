@@ -111,7 +111,6 @@ if add_button:
             if fuel_liters > 0:
                 liters_per_100km = (fuel_liters / km_driven) * 100
         
-        # Məlumatı birbaşa SQLite bazasına daxil edirik
         cursor.execute('''
             INSERT INTO expenses (vehicle_model, expense_type, amount, date, fuel_liters, km_driven, cost_per_100km)
             VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -123,7 +122,7 @@ if add_button:
         else:
             st.success("✅ Expense successfully logged to your database diary!")
 
-# --- 📊 BAZADAN MƏLUMATLARIN OXUNMASI VƏ İZLƏMƏ MATRİXİ ---
+# --- 📊 BAZADAN MƏLUMATLARIN OXUNMASI ---
 df = pd.read_sql_query("""
     SELECT vehicle_model AS 'Vehicle Model', 
            expense_type AS 'Expense Category', 
@@ -136,37 +135,62 @@ df = pd.read_sql_query("""
 """, conn)
 
 if not df.empty:
-    total_cost = df["Amount ($)"].sum()
-    chart_data = df.groupby("Expense Category")["Amount ($)"].sum()
+    st.write("### 🔍 Filter & Search Horizon")
+    f_col1, f_col2 = st.columns(2)
     
-    st.write("### 📋 Current Vehicle Expenses Log Matrix (SQLite Database)")
-    df_display = df.copy()
-    
-    df_display["Amount ($)"] = df_display["Amount ($)"].map("{:,.2f}".format)
-    df_display["Cost/100km ($)"] = df_display["Cost/100km ($)"].map("{:,.2f}".format)
-    df_display["Liters (L)"] = df_display["Liters (L)"].map("{:,.2f}".format)
-    df_display["Km Driven"] = df_display["Km Driven"].map("{:,.2f}".format)
-            
-    st.table(df_display)
-    
-    st.markdown(f"<h4 style='color: #2563eb !important;'>💰 Total Cumulative Vehicle Expenditure: {total_cost:,.2f} $</h4>", unsafe_allow_html=True)
-    
-    @st.cache_data
-    def convert_df_to_csv(dataframe):
-        return dataframe.to_csv(index=False).encode("utf-8")
+    with f_col1:
+        # Kateqoriya filtri
+        categories = ["All Categories"] + list(df["Expense Category"].unique())
+        selected_category = st.selectbox("Filter by Category:", categories)
+        
+    with f_col2:
+        # Model üzrə axtarış
+        search_query = st.text_input("Search by Vehicle Model:", placeholder="Type model name...")
 
-    csv_data = convert_df_to_csv(df)
-    
-    st.download_button(
-        label="📥 Xərcləri Excel / CSV olaraq yüklə",
-        data=csv_data,
-        file_name="autocost_hesabat.csv",
-        mime="text/csv",
-        use_container_width=True
-    )
-    
+    # Filtrləmə məntiqi
+    filtered_df = df.copy()
+    if selected_category != "All Categories":
+        filtered_df = filtered_df[filtered_df["Expense Category"] == selected_category]
+        
+    if search_query.strip() != "":
+        filtered_df = filtered_df[filtered_df["Vehicle Model"].str.contains(search_query, case=False, na=False)]
+
     st.write("---")
-    st.write("### 📊 Expense Distribution Analytics Horizon")
-    st.bar_chart(chart_data)
+    
+    if not filtered_df.empty:
+        total_cost = filtered_df["Amount ($)"].sum()
+        chart_data = filtered_df.groupby("Expense Category")["Amount ($)"].sum()
+        
+        st.write("### 📋 Current Vehicle Expenses Log Matrix (SQLite Database)")
+        df_display = filtered_df.copy()
+        
+        df_display["Amount ($)"] = df_display["Amount ($)"].map("{:,.2f}".format)
+        df_display["Cost/100km ($)"] = df_display["Cost/100km ($)"].map("{:,.2f}".format)
+        df_display["Liters (L)"] = df_display["Liters (L)"].map("{:,.2f}".format)
+        df_display["Km Driven"] = df_display["Km Driven"].map("{:,.2f}".format)
+                
+        st.table(df_display)
+        
+        st.markdown(f"<h4 style='color: #2563eb !important;'>💰 Total Cumulative Vehicle Expenditure (Filtered): {total_cost:,.2f} $</h4>", unsafe_allow_html=True)
+        
+        @st.cache_data
+        def convert_df_to_csv(dataframe):
+            return dataframe.to_csv(index=False).encode("utf-8")
+
+        csv_data = convert_df_to_csv(filtered_df)
+        
+        st.download_button(
+            label="📥 Filtrlənmiş Xərcləri Excel / CSV olaraq yüklə",
+            data=csv_data,
+            file_name="autocost_filtrlənmiş_hesabat.csv",
+            mime="text/csv",
+            use_container_width=True
+        )
+        
+        st.write("---")
+        st.write("### 📊 Expense Distribution Analytics Horizon")
+        st.bar_chart(chart_data)
+    else:
+        st.warning("⚠️ No records found matching your filter or search criteria.")
 else:
     st.info("💡 No expenses registered in the database yet. Input your core parameters above to initialize track logs.")
