@@ -168,8 +168,6 @@ with tab1:
 with tab2:
     st.markdown("### 🔍 Filter, Search & Advanced Analytics Horizon")
     
-    user_id = st.session_state.get("user_id")
-    
     try:
         res = supabase.table("expenses").select("*").eq("user_id", user_id).execute()
         data = res.data
