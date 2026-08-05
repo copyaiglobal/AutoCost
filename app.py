@@ -258,12 +258,15 @@ with tab2:
                 timeline_df["Date"] = pd.to_datetime(timeline_df["Date"])
                 timeline_df = timeline_df.sort_values("Date")
                 
+                # Tarixi səliqəli string formatına çeviririk ki, saatlar (00:00) ümumiyyətlə görünməsin
+                timeline_df["Date_Str"] = timeline_df["Date"].dt.strftime("%b %d, %Y")
+                
                 fig = px.line(
                     timeline_df, 
-                    x="Date", 
+                    x="Date_Str", 
                     y="Amount ($)", 
                     markers=True,
-                    labels={"Amount ($)": "Amount ($)", "Date": "Transaction Date"}
+                    labels={"Amount ($)": "Amount ($)", "Date_Str": "Transaction Date"}
                 )
                 fig.update_layout(
                     plot_bgcolor="rgba(0,0,0,0)",
