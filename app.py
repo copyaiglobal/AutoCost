@@ -238,9 +238,12 @@ with tab2:
                 
                 st.table(df_display[['Vehicle Model', 'Expense Category', 'Amount ($)', 'Date', 'Liters (L)', 'Km Driven', 'Cost/100km ($)']])
                 
+                # Yalnız istifadəçiyə lazım olan sütunları seçirik (id, user_id və inserted_at xaric edilir)
+                df_export = filtered_df[['Vehicle Model', 'Expense Category', 'Amount ($)', 'Date', 'Liters (L)', 'Km Driven', 'Cost/100km ($)']].copy()
+                
                 st.download_button(
                     label="📥 Download Filtered Expenses as CSV",
-                    data=filtered_df.to_csv(index=False).encode("utf-8-sig"),
+                    data=df_export.to_csv(index=False).encode("utf-8-sig"),
                     file_name="autocost_cloud_report.csv",
                     mime="text/csv",
                     use_container_width=True
