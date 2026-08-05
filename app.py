@@ -161,7 +161,6 @@ with tab1:
                     "cost_per_100km": round(cost_per_100km, 2)
                 }).execute()
                 st.success("✅ Expense successfully logged to your cloud database!")
-                st.rerun()
             except Exception as e:
                 st.error(f"❌ Error saving expense: {e}")
 
