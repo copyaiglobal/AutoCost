@@ -2,6 +2,7 @@ import streamlit as st
 import datetime
 from supabase import create_client
 import pandas as pd
+import plotly.express as px
 
 try:
     url = st.secrets["SUPABASE_URL"]
@@ -164,7 +165,7 @@ with tab1:
                 st.success("✅ Expense successfully logged to your cloud database!")
             except Exception as e:
                 st.error(f"❌ Error saving expense: {e}")
-# --- TAB 2: FİLTR, AXTARIŞ VƏ ANALİTİKA ---
+# --- TAB 2: FILTER, SEARCH & ANALYTICS ---
 with tab2:
     st.markdown("### 🔍 Filter, Search & Advanced Analytics Horizon")
     
@@ -173,7 +174,9 @@ with tab2:
         data = res.data
         
         if data:
+            import pandas as pd
             df = pd.DataFrame(data)
+            
             df = df.rename(columns={
                 "vehicle_model": "Vehicle Model",
                 "expense_type": "Expense Category",
@@ -187,30 +190,27 @@ with tab2:
             f_col1, f_col2 = st.columns(2)
             with f_col1:
                 categories = ["All Categories"] + list(df["Expense Category"].unique())
-                selected_category = st.selectbox("Filter by Category:", categories, key="tab2_cat")
+                selected_category = st.selectbox("Filter by Category", categories, key="filter_cat")
             with f_col2:
-                search_query = st.text_input("Search by Vehicle Model:", placeholder="Type model name...", key="tab2_search")
-
-            df['parsed_date'] = pd.to_datetime(df['Date']).dt.date
-            min_d = df['parsed_date'].min()
-            max_d = df['parsed_date'].max()
-
+                model_query = st.text_input("Search by Vehicle Model:", placeholder="Type model name...", key="filter_model")
+            
+            df["Date"] = pd.to_datetime(df["Date"])
+            min_date = df["Date"].min().date()
+            max_date = df["Date"].max().date()
+            
             d_col1, d_col2 = st.columns(2)
             with d_col1:
-                start_date = st.date_input("Start Date Horizon:", value=min_d, min_value=min_d, max_value=max_d, key="tab2_start")
+                start_date = st.date_input("Start Date Horizon", min_date, key="filter_start")
             with d_col2:
-                end_date = st.date_input("End Date Horizon:", value=max_d, min_value=min_d, max_value=max_d, key="tab2_end")
-
+                end_date = st.date_input("End Date Horizon", max_date, key="filter_end")
+            
             filtered_df = df.copy()
             if selected_category != "All Categories":
                 filtered_df = filtered_df[filtered_df["Expense Category"] == selected_category]
-            if search_query.strip() != "":
-                filtered_df = filtered_df[filtered_df["Vehicle Model"].str.contains(search_query, case=False, na=False)]
+            if model_query.strip():
+                filtered_df = filtered_df[filtered_df["Vehicle Model"].str.contains(model_query, case=False, na=False)]
             
-            filtered_df = filtered_df[(filtered_df['parsed_date'] >= start_date) & (filtered_df['parsed_date'] <= end_date)]
-            filtered_df = filtered_df.drop(columns=['parsed_date'])
-
-            st.write("---")
+            filtered_df = filtered_df[(filtered_df["Date"].dt.date >= start_date) & (filtered_df["Date"].dt.date <= end_date)]
             
             if not filtered_df.empty:
                 total_cost = filtered_df["Amount ($)"].sum()
@@ -226,6 +226,7 @@ with tab2:
                 st.markdown("#### 📋 Current Vehicle Expenses Log Matrix (Cloud Database)")
                 
                 df_display = filtered_df.copy()
+                df_display["Date"] = df_display["Date"].dt.strftime("%Y-%m-%d")
                 df_display["Amount ($)"] = df_display["Amount ($)"].map(lambda x: f"{x:,.2f}")
                 df_display["Cost/100km ($)"] = df_display["Cost/100km ($)"].map(lambda x: f"{x:,.2f}")
                 df_display["Liters (L)"] = df_display["Liters (L)"].map(lambda x: f"{x:,.2f}")
@@ -256,7 +257,22 @@ with tab2:
                 timeline_df = filtered_df.groupby("Date")["Amount ($)"].sum().reset_index()
                 timeline_df["Date"] = pd.to_datetime(timeline_df["Date"])
                 timeline_df = timeline_df.sort_values("Date")
-                st.line_chart(timeline_df.set_index("Date")["Amount ($)"])
+                
+                fig = px.line(
+                    timeline_df, 
+                    x="Date", 
+                    y="Amount ($)", 
+                    markers=True,
+                    labels={"Amount ($)": "Amount ($)", "Date": "Transaction Date"}
+                )
+                fig.update_layout(
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    font=dict(color="#1e3a8a", size=12),
+                    xaxis=dict(showgrid=True, gridcolor="#e2e8f0"),
+                    yaxis=dict(showgrid=True, gridcolor="#e2e8f0")
+                )
+                st.plotly_chart(fig, use_container_width=True)
             else:
                 st.warning("⚠️ No records found matching your filter criteria.")
         else:
@@ -264,7 +280,6 @@ with tab2:
             
     except Exception as e:
         st.error(f"Error loading data: {e}")
-
 # --- TAB 3: SƏNƏDLƏR VƏ XƏBƏRDARLIQLAR ---
 with tab3:
     st.markdown("### 📜 Document & Expiry Alerts Matrix")
