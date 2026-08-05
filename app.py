@@ -1,0 +1,332 @@
+import streamlit as st
+import datetime
+from supabase import create_client
+
+try:
+    url = st.secrets["SUPABASE_URL"]
+    key = st.secrets["SUPABASE_KEY"]
+    supabase = create_client(url, key)
+except Exception as e:
+    st.error(f"Supabase connection failed. Please check your secrets configuration. Error: {e}")
+    st.stop()
+# --- 🎨 SƏHİFƏ AYARLARI VƏ DİZAYN ---
+st.set_page_config(page_title="AutoCost - Cloud SaaS", page_icon="🚗", layout="centered")
+
+st.markdown("""
+<style>
+html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] { 
+    background-color: #f8fafc !important; 
+    color: #0f172a !important; 
+}
+h2, h3 { color: #1e3a8a !important; font-family: 'Helvetica Neue', sans-serif; font-weight: bold; }
+h4 { color: #1e3a8a !important; font-weight: bold !important; margin-top: 15px !important; }
+
+.stTextInput>div>div>input, .stSelectbox>div>div>div, .stNumberInput>div>div>input, .stDateInput>div>div>input {
+    background-color: #ffffff !important;
+    border: 2px solid #cbd5e1 !important;
+    border-radius: 8px !important;
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+}
+
+::placeholder { color: #94a3b8 !important; opacity: 1 !important; -webkit-text-fill-color: #94a3b8 !important; }
+
+.stTextInput label, .stSelectbox label, .stNumberInput label, .stDateInput label {
+    color: #334155 !important;
+    font-size: 15px !important;
+    font-weight: bold;
+}
+
+.stButton>button, div.stFormSubmitButton>button { 
+    background-color: #2563eb !important; 
+    color: white !important; 
+    border-radius: 10px; 
+    font-weight: bold; 
+    border: none;
+    padding: 12px;
+    font-size: 16px;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    width: 100%;
+}
+.stButton>button:hover, div.stFormSubmitButton>button:hover { background-color: #1d4ed8 !important; }
+</style>
+""", unsafe_allow_html=True)
+
+# --- 🔐 SESSION STATE (İSTİFADƏÇİ GİRİŞİ) ---
+if "user" not in st.session_state:
+    st.session_state.user = None
+
+# Əgər istifadəçi daxil olmayıbsa, GİRİŞ / QEYDİYYAT EKRANI göstər
+if st.session_state.user is None:
+    st.markdown("<h2 style='text-align: center; color: #1e3a8a;'>🚗 AutoCost Cloud SaaS</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #475569;'>Please sign in or create an account to manage your secure vehicle diary.</p>", unsafe_allow_html=True)
+    
+    auth_tab1, auth_tab2 = st.tabs(["🔑 Sign In", "📝 Register"])
+    
+    with auth_tab1:
+        st.markdown("### Sign In to Your Account")
+        login_email = st.text_input("Email Address", placeholder="name@example.com", key="login_email")
+        login_password = st.text_input("Password", type="password", key="login_pass")
+        
+        if st.button("Sign In ✨", key="login_btn"):
+            try:
+                res = supabase.auth.sign_in_with_password({"email": login_email, "password": login_password})
+                st.session_state.user = res.user
+                st.success("🎉 Successfully signed in!")
+                st.rerun()
+            except Exception as e:
+                st.error(f"❌ Login failed: {e}")
+                
+    with auth_tab2:
+        st.markdown("### Create New Account")
+        reg_email = st.text_input("Email Address", placeholder="name@example.com", key="reg_email")
+        reg_password = st.text_input("Password", type="password", key="reg_pass")
+        
+        if st.button("Register Account 🚀", key="reg_btn"):
+            try:
+                res = supabase.auth.sign_up({"email": reg_email, "password": reg_password})
+                st.success("✅ Account created successfully! You can now sign in.")
+            except Exception as e:
+                st.error(f"❌ Registration failed: {e}")
+                
+    st.stop() # İstifadəçi daxil olmayıbsa kodun davamı oxunmur
+# --- 👑 ƏSAS TƏTBİQ (İstifadəçi daxil olduqdan sonra) ---
+user_id = st.session_state.user.id
+user_email = st.session_state.user.email
+
+# Sidebar - Profil və Çıxış
+with st.sidebar:
+    st.markdown(f"👤 Logged in as:\n{user_email}")
+    st.write("---")
+    if st.button("🚪 Sign Out", use_container_width=True):
+        supabase.auth.sign_out()
+        st.session_state.user = None
+        st.rerun()
+
+st.markdown("<h2>🚗 AutoCost — Car Expenses & Documents Diary</h2>", unsafe_allow_html=True)
+st.markdown("<p style='color: #475569; font-size: 15px;'>Smart cloud financial vehicle diary. Track your fuel, repairs, and documents securely.</p>", unsafe_allow_html=True)
+st.write("---")
+
+tab1, tab2, tab3 = st.tabs(["💰 Add Expense", "🔍 Filter, Search & Analytics", "📜 Document Expiry Alerts"])
+
+# --- TAB 1: XƏRC DAXİLMƏ ---
+with tab1:
+    st.markdown("### 💰 Log New Vehicle Expense")
+    
+    with st.form("expense_form", clear_on_submit=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            car_model = st.text_input("Vehicle Model / Brand:", placeholder="e.g., Prius, Mercedes")
+            expense_type = st.selectbox("Expense Category:", ["Fuel ⛽", "Repair 🔧", "Insurance 📜", "Other 📦"])
+        with col2:
+            expense_amount = st.number_input("Expense Amount ($):", min_value=0.0, value=0.0, step=1.0)
+            expense_date = st.date_input("Transaction Date:", datetime.date.today())
+
+        fuel_liters = 0.0
+        km_driven = 0.0
+
+        if "Fuel" in expense_type:
+            st.markdown("<div style='background-color: #eff6ff; padding: 15px; border-radius: 10px; border: 1px solid #bfdbfe; margin-top: 10px;'>", unsafe_allow_html=True)
+            st.markdown("<h4 style='color: #1e40af !important; margin-bottom: 10px;'>⛽ Fuel Consumption Calculator Matrix</h4>", unsafe_allow_html=True)
+            f_col1, f_col2 = st.columns(2)
+            with f_col1:
+                fuel_liters = st.number_input("Fuel Liters (L):", min_value=0.0, value=0.0, step=0.5)
+            with f_col2:
+                km_driven = st.number_input("Kilometers Driven (km):", min_value=0.0, value=0.0, step=1.0)
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        st.write(" ")
+        add_expense_btn = st.form_submit_button("Add Expense to Cloud Log ✨", use_container_width=True)
+
+    if add_expense_btn:
+        if car_model.strip() == "" or expense_amount <= 0:
+            st.error("⚠️ Please enter the vehicle model and ensure the amount is greater than 0!")
+        else:
+            cost_per_100km = 0.0
+            if "Fuel" in expense_type and km_driven > 0:
+                cost_per_100km = (expense_amount / km_driven) * 100
+            
+            try:
+                supabase.table("expenses").insert({
+                    "user_id": user_id,
+                    "vehicle_model": car_model.strip(),
+                    "expense_type": expense_type,
+                    "amount": expense_amount,
+                    "date": str(expense_date),
+                    "fuel_liters": fuel_liters,
+                    "km_driven": km_driven,
+                    "cost_per_100km": round(cost_per_100km, 2)
+                }).execute()
+                st.success("✅ Expense successfully logged to your cloud database!")
+                st.rerun()
+            except Exception as e:
+                st.error(f"❌ Error saving expense: {e}")
+
+# --- TAB 2: FİLTR, AXTARIŞ VƏ ANALİTİKA ---
+with tab2:
+    st.markdown("### 🔍 Filter, Search & Advanced Analytics Horizon")
+    
+    # Bazadan yalnız cari istifadəçinin xərclərini çəkirik
+    res = supabase.table("expenses").select("*").eq("user_id", user_id).execute()
+    data = res.data
+    
+    if data:
+        df = pd.DataFrame(data)
+        # Sütun adlarını interfeysə uyğunlaşdırırıq
+        df = df.rename(columns={
+            "vehicle_model": "Vehicle Model",
+            "expense_type": "Expense Category",
+            "amount": "Amount ($)",
+            "date": "Date",
+            "fuel_liters": "Liters (L)",
+            "km_driven": "Km Driven",
+            "cost_per_100km": "Cost/100km ($)"
+        })
+
+        f_col1, f_col2 = st.columns(2)
+        with f_col1:
+            categories = ["All Categories"] + list(df["Expense Category"].unique())
+            selected_category = st.selectbox("Filter by Category:", categories)
+        with f_col2:
+            search_query = st.text_input("Search by Vehicle Model:", placeholder="Type model name...")
+
+        d_col1, d_col2 = st.columns(2)
+        df['parsed_date'] = pd.to_datetime(df['Date']).dt.date
+        min_d = df['parsed_date'].min()
+        max_d = df['parsed_date'].max()
+
+        with d_col1:
+            start_date = st.date_input("Start Date Horizon:", value=min_d, min_value=min_d, max_value=max_d)
+        with d_col2:
+            end_date = st.date_input("End Date Horizon:", value=max_d, min_value=min_d, max_value=max_d)
+
+        filtered_df = df.copy()
+        if selected_category != "All Categories":
+            filtered_df = filtered_df[filtered_df["Expense Category"] == selected_category]
+        if search_query.strip() != "":
+            filtered_df = filtered_df[filtered_df["Vehicle Model"].str.contains(search_query, case=False, na=False)]
+            
+        filtered_df = filtered_df[(filtered_df['parsed_date'] >= start_date) & (filtered_df['parsed_date'] <= end_date)]
+        filtered_df = filtered_df.drop(columns=['parsed_date'])
+
+        st.write("---")
+        
+        if not filtered_df.empty:
+            total_cost = filtered_df["Amount ($)"].sum()
+            total_km = filtered_df["Km Driven"].sum()
+            total_liters = filtered_df["Liters (L)"].sum()
+            
+            m1, m2, m3 = st.columns(3)
+            m1.metric("💰 Total Expenditure", f"${total_cost:,.2f}")
+            m2.metric("🛣️ Total Distance", f"{total_km:,.1f} km")
+            m3.metric("⛽ Total Fuel", f"{total_liters:,.1f} L")
+            
+            st.write("---")
+            st.markdown("#### 📋 Current Vehicle Expenses Log Matrix (Cloud Database)")
+            
+            df_display = filtered_df.copy()
+            df_display["Amount ($)"] = df_display["Amount ($)"].map(lambda x: f"{x:,.2f}")
+            df_display["Cost/100km ($)"] = df_display["Cost/100km ($)"].map(lambda x: f"{x:,.2f}")
+            df_display["Liters (L)"] = df_display["Liters (L)"].map(lambda x: f"{x:,.2f}")
+            df_display["Km Driven"] = df_display["Km Driven"].map(lambda x: f"{x:,.2f}")
+            
+            st.table(df_display[['Vehicle Model', 'Expense Category', 'Amount ($)', 'Date', 'Liters (L)', 'Km Driven', 'Cost/100km ($)']])
+            
+            st.download_button(
+                label="📥 Download Filtered Expenses as CSV",
+                data=filtered_df.to_csv(index=False).encode("utf-8-sig"),
+                file_name="autocost_cloud_report.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
+            
+            st.write("---")
+            st.markdown("#### 📊 Advanced Expense Analytics Horizon")
+            g_col1, g_col2 = st.columns(2)
+            with g_col1:
+                st.markdown("<p style='font-weight: bold; color: #1e3a8a;'>By Category ($)</p>", unsafe_allow_html=True)
+                st.bar_chart(filtered_df.groupby("Expense Category")["Amount ($)"].sum())
+            with g_col2:
+                st.markdown("<p style='font-weight: bold; color: #1e3a8a;'>By Vehicle Model ($)</p>", unsafe_allow_html=True)
+                st.bar_chart(filtered_df.groupby("Vehicle Model")["Amount ($)"].sum())
+
+            st.markdown("<p style='font-weight: bold; color: #1e3a8a; margin-top: 20px;'>Spending Timeline Trend</p>", unsafe_allow_html=True)
+            st.line_chart(filtered_df.groupby("Date")["Amount ($)"].sum())
+        else:
+            st.warning("⚠️ No records found matching your filter criteria.")
+    else:
+        st.info("💡 No expenses registered in the cloud database yet.")
+
+# --- TAB 3: SƏNƏDLƏR VƏ XƏBƏRDARLIQLAR ---
+with tab3:
+    st.markdown("### 📜 Document & Expiry Alerts Matrix")
+    
+    with st.form("document_form", clear_on_submit=True):
+        doc_col1, doc_col2 = st.columns(2)
+        with doc_col1:
+            doc_car_model = st.text_input("Vehicle Model for Document:", placeholder="e.g., Prius, BMW")
+            doc_name = st.selectbox("Document Type:", ["Insurance 📜", "Technical Inspection 🔍", "Road Tax 🛣️", "Other 📄"])
+        with doc_col2:
+            doc_expiry_date = st.date_input("Document Expiry Date:", datetime.date.today() + datetime.timedelta(days=30))
+            st.write("") 
+            st.write("")
+            add_doc_button = st.form_submit_button("Add Document Alert 🔔", use_container_width=True)
+
+    if add_doc_button:
+        if doc_car_model.strip() == "":
+            st.error("⚠️ Please enter the vehicle model for the document!")
+        else:
+            try:
+                supabase.table("vehicle_documents").insert({
+                    "user_id": user_id,
+                    "vehicle_model": doc_car_model.strip(),
+                    "doc_name": doc_name,
+                    "expiry_date": str(doc_expiry_date)
+                }).execute()
+                st.success("✅ Document alert successfully added to cloud database!")
+                st.rerun()
+            except Exception as e:
+                st.error(f"❌ Error saving document: {e}")
+
+    docs_res = supabase.table("vehicle_documents").select("*").eq("user_id", user_id).execute()
+    docs_data = docs_res.data
+    
+    if docs_data:
+        docs_df = pd.DataFrame(docs_data)
+        docs_df = docs_df.rename(columns={
+            "vehicle_model": "Vehicle Model",
+            "doc_name": "Document Type",
+            "expiry_date": "Expiry Date"
+        })
+        
+        st.write("---")
+        st.markdown("#### Registered Documents & Status Horizon")
+        today = datetime.date.today()
+        
+        status_list = []
+        days_left_list = []
+        for idx, row in docs_df.iterrows():
+            exp_date = datetime.datetime.strptime(row['Expiry Date'], "%Y-%m-%d").date()
+            days_left = (exp_date - today).days
+            days_left_list.append(days_left)
+            if days_left < 0:
+                status_list.append("🔴 Expired")
+            elif days_left <= 30:
+                status_list.append(f"⚠️ Expiring Soon ({days_left} days left)")
+            else:
+                status_list.append(f"🟢 Valid ({days_left} days left)")
+                
+        docs_display = docs_df.copy()
+        docs_display['Status'] = status_list
+        
+        st.table(docs_display[['Vehicle Model', 'Document Type', 'Expiry Date', 'Status']])
+
+        expired_count = sum(1 for d in days_left_list if d < 0)
+        soon_count = sum(1 for d in days_left_list if 0 <= d <= 30)
+
+        if expired_count > 0:
+            st.error(f"🚨 Attention! You have {expired_count} expired document(s)!")
+        if soon_count > 0:
+            st.warning(f"⚠️ Warning! You have {soon_count} document(s) expiring within the next 30 days.")
