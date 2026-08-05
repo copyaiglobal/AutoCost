@@ -113,33 +113,34 @@ st.write("---")
 tab1, tab2, tab3 = st.tabs(["💰 Add Expense", "🔍 Filter, Search & Analytics", "📜 Document Expiry Alerts"])
 
 # --- TAB 1: XƏRC DAXİLMƏ ---
+
+       # --- TAB 1: XƏRC DAXİLMƏ ---
 with tab1:
     st.markdown("### 💰 Log New Vehicle Expense")
     
-    with st.form("expense_form", clear_on_submit=True):
-        col1, col2 = st.columns(2)
-        with col1:
-            car_model = st.text_input("Vehicle Model / Brand:", placeholder="e.g., Prius, Mercedes")
-            expense_type = st.selectbox("Expense Category:", ["Fuel ⛽", "Repair 🔧", "Insurance 📜", "Other 📦"])
-        with col2:
-            expense_amount = st.number_input("Expense Amount ($):", min_value=0.0, value=0.0, step=1.0)
-            expense_date = st.date_input("Transaction Date:", datetime.date.today())
+    col1, col2 = st.columns(2)
+    with col1:
+        car_model = st.text_input("Vehicle Model / Brand:", placeholder="e.g., Prius, Mercedes", key="exp_model")
+        expense_type = st.selectbox("Expense Category:", ["Fuel ⛽", "Repair 🔧", "Insurance 📜", "Other 📦"], key="exp_type")
+    with col2:
+        expense_amount = st.number_input("Expense Amount ($):", min_value=0.0, value=0.0, step=1.0, key="exp_amount")
+        expense_date = st.date_input("Transaction Date:", datetime.date.today(), key="exp_date")
 
-        fuel_liters = 0.0
-        km_driven = 0.0
+    fuel_liters = 0.0
+    km_driven = 0.0
 
-        if "Fuel" in expense_type:
-            st.markdown("<div style='background-color: #eff6ff; padding: 15px; border-radius: 10px; border: 1px solid #bfdbfe; margin-top: 10px;'>", unsafe_allow_html=True)
-            st.markdown("<h4 style='color: #1e40af !important; margin-bottom: 10px;'>⛽ Fuel Consumption Calculator Matrix</h4>", unsafe_allow_html=True)
-            f_col1, f_col2 = st.columns(2)
-            with f_col1:
-                fuel_liters = st.number_input("Fuel Liters (L):", min_value=0.0, value=0.0, step=0.5)
-            with f_col2:
-                km_driven = st.number_input("Kilometers Driven (km):", min_value=0.0, value=0.0, step=1.0)
-            st.markdown("</div>", unsafe_allow_html=True)
+    if "Fuel" in expense_type:
+        st.markdown("<div style='background-color: #eff6ff; padding: 15px; border-radius: 10px; border: 1px solid #bfdbfe; margin-top: 10px;'>", unsafe_allow_html=True)
+        st.markdown("<h4 style='color: #1e40af !important; margin-bottom: 10px;'>⛽ Fuel Consumption Calculator Matrix</h4>", unsafe_allow_html=True)
+        f_col1, f_col2 = st.columns(2)
+        with f_col1:
+            fuel_liters = st.number_input("Fuel Liters (L):", min_value=0.0, value=0.0, step=0.5, key="exp_liters")
+        with f_col2:
+            km_driven = st.number_input("Kilometers Driven (km):", min_value=0.0, value=0.0, step=1.0, key="exp_km")
+        st.markdown("</div>", unsafe_allow_html=True)
 
-        st.write(" ")
-        add_expense_btn = st.form_submit_button("Add Expense to Cloud Log ✨", use_container_width=True)
+    st.write(" ")
+    add_expense_btn = st.button("Add Expense to Cloud Log ✨", use_container_width=True)
 
     if add_expense_btn:
         if car_model.strip() == "" or expense_amount <= 0:
@@ -163,7 +164,6 @@ with tab1:
                 st.success("✅ Expense successfully logged to your cloud database!")
             except Exception as e:
                 st.error(f"❌ Error saving expense: {e}")
-
 # --- TAB 2: FİLTR, AXTARIŞ VƏ ANALİTİKA ---
 with tab2:
     st.markdown("### 🔍 Filter, Search & Advanced Analytics Horizon")
