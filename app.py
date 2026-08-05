@@ -162,6 +162,7 @@ with tab1:
                     "km_driven": km_driven,
                     "cost_per_100km": round(cost_per_100km, 2)
                 }).execute()
+                st.session_state["filter_end"] = expense_date
                 st.success("✅ Expense successfully logged to your cloud database!")
             except Exception as e:
                 st.error(f"❌ Error saving expense: {e}")
@@ -198,12 +199,15 @@ with tab2:
             min_date = df["Date"].min().date()
             max_date = df["Date"].max().date()
             
+            # ---> 2-ci kodu BURAYA qoyursan:
+            if "filter_end" not in st.session_state:
+                st.session_state["filter_end"] = max_date
+            
             d_col1, d_col2 = st.columns(2)
             with d_col1:
                 start_date = st.date_input("Start Date Horizon", min_date, key="filter_start")
             with d_col2:
-                end_date = st.date_input("End Date Horizon", max_date, key="filter_end")
-            
+                end_date = st.date_input("End Date Horizon", key="filter_end")
             filtered_df = df.copy()
             if selected_category != "All Categories":
                 filtered_df = filtered_df[filtered_df["Expense Category"] == selected_category]
