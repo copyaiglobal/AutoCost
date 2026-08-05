@@ -239,7 +239,7 @@ with tab2:
                     file_name="autocost_cloud_report.csv",
                     mime="text/csv",
                     use_container_width=True
-)
+                )
                 
                 st.write("---")
                 st.markdown("#### 📊 Advanced Expense Analytics Horizon")
@@ -252,7 +252,11 @@ with tab2:
                     st.bar_chart(filtered_df.groupby("Vehicle Model")["Amount ($)"].sum())
 
                 st.markdown("<p style='font-weight: bold; color: #1e3a8a; margin-top: 20px;'>Spending Timeline Trend</p>", unsafe_allow_html=True)
-                st.line_chart(filtered_df.groupby("Date")["Amount ($)"].sum())
+                
+                timeline_df = filtered_df.groupby("Date")["Amount ($)"].sum().reset_index()
+                timeline_df["Date"] = pd.to_datetime(timeline_df["Date"])
+                timeline_df = timeline_df.sort_values("Date")
+                st.line_chart(timeline_df.set_index("Date")["Amount ($)"])
             else:
                 st.warning("⚠️ No records found matching your filter criteria.")
         else:
