@@ -1,6 +1,7 @@
 import streamlit as st
 import datetime
 from supabase import create_client
+import pandas as pd
 
 try:
     url = st.secrets["SUPABASE_URL"]
@@ -168,96 +169,100 @@ with tab1:
 with tab2:
     st.markdown("### 🔍 Filter, Search & Advanced Analytics Horizon")
     
-    # Bazadan yalnız cari istifadəçinin xərclərini çəkirik
-    res = supabase.table("expenses").select("*").eq("user_id", user_id).execute()
-    data = res.data
+    user_id = st.session_state.get("user_id")
     
-    if data:
-        df = pd.DataFrame(data)
-        # Sütun adlarını interfeysə uyğunlaşdırırıq
-        df = df.rename(columns={
-            "vehicle_model": "Vehicle Model",
-            "expense_type": "Expense Category",
-            "amount": "Amount ($)",
-            "date": "Date",
-            "fuel_liters": "Liters (L)",
-            "km_driven": "Km Driven",
-            "cost_per_100km": "Cost/100km ($)"
-        })
-
-        f_col1, f_col2 = st.columns(2)
-        with f_col1:
-            categories = ["All Categories"] + list(df["Expense Category"].unique())
-            selected_category = st.selectbox("Filter by Category:", categories)
-        with f_col2:
-            search_query = st.text_input("Search by Vehicle Model:", placeholder="Type model name...")
-
-        d_col1, d_col2 = st.columns(2)
-        df['parsed_date'] = pd.to_datetime(df['Date']).dt.date
-        min_d = df['parsed_date'].min()
-        max_d = df['parsed_date'].max()
-
-        with d_col1:
-            start_date = st.date_input("Start Date Horizon:", value=min_d, min_value=min_d, max_value=max_d)
-        with d_col2:
-            end_date = st.date_input("End Date Horizon:", value=max_d, min_value=min_d, max_value=max_d)
-
-        filtered_df = df.copy()
-        if selected_category != "All Categories":
-            filtered_df = filtered_df[filtered_df["Expense Category"] == selected_category]
-        if search_query.strip() != "":
-            filtered_df = filtered_df[filtered_df["Vehicle Model"].str.contains(search_query, case=False, na=False)]
-            
-        filtered_df = filtered_df[(filtered_df['parsed_date'] >= start_date) & (filtered_df['parsed_date'] <= end_date)]
-        filtered_df = filtered_df.drop(columns=['parsed_date'])
-
-        st.write("---")
+    try:
+        res = supabase.table("expenses").select("*").eq("user_id", user_id).execute()
+        data = res.data
         
-        if not filtered_df.empty:
-            total_cost = filtered_df["Amount ($)"].sum()
-            total_km = filtered_df["Km Driven"].sum()
-            total_liters = filtered_df["Liters (L)"].sum()
+        if data:
+            df = pd.DataFrame(data)
+            df = df.rename(columns={
+                "vehicle_model": "Vehicle Model",
+                "expense_type": "Expense Category",
+                "amount": "Amount ($)",
+                "date": "Date",
+                "fuel_liters": "Liters (L)",
+                "km_driven": "Km Driven",
+                "cost_per_100km": "Cost/100km ($)"
+            })
             
-            m1, m2, m3 = st.columns(3)
-            m1.metric("💰 Total Expenditure", f"${total_cost:,.2f}")
-            m2.metric("🛣️ Total Distance", f"{total_km:,.1f} km")
-            m3.metric("⛽ Total Fuel", f"{total_liters:,.1f} L")
-            
-            st.write("---")
-            st.markdown("#### 📋 Current Vehicle Expenses Log Matrix (Cloud Database)")
-            
-            df_display = filtered_df.copy()
-            df_display["Amount ($)"] = df_display["Amount ($)"].map(lambda x: f"{x:,.2f}")
-            df_display["Cost/100km ($)"] = df_display["Cost/100km ($)"].map(lambda x: f"{x:,.2f}")
-            df_display["Liters (L)"] = df_display["Liters (L)"].map(lambda x: f"{x:,.2f}")
-            df_display["Km Driven"] = df_display["Km Driven"].map(lambda x: f"{x:,.2f}")
-            
-            st.table(df_display[['Vehicle Model', 'Expense Category', 'Amount ($)', 'Date', 'Liters (L)', 'Km Driven', 'Cost/100km ($)']])
-            
-            st.download_button(
-                label="📥 Download Filtered Expenses as CSV",
-                data=filtered_df.to_csv(index=False).encode("utf-8-sig"),
-                file_name="autocost_cloud_report.csv",
-                mime="text/csv",
-                use_container_width=True
-            )
-            
-            st.write("---")
-            st.markdown("#### 📊 Advanced Expense Analytics Horizon")
-            g_col1, g_col2 = st.columns(2)
-            with g_col1:
-                st.markdown("<p style='font-weight: bold; color: #1e3a8a;'>By Category ($)</p>", unsafe_allow_html=True)
-                st.bar_chart(filtered_df.groupby("Expense Category")["Amount ($)"].sum())
-            with g_col2:
-                st.markdown("<p style='font-weight: bold; color: #1e3a8a;'>By Vehicle Model ($)</p>", unsafe_allow_html=True)
-                st.bar_chart(filtered_df.groupby("Vehicle Model")["Amount ($)"].sum())
+            f_col1, f_col2 = st.columns(2)
+            with f_col1:
+                categories = ["All Categories"] + list(df["Expense Category"].unique())
+                selected_category = st.selectbox("Filter by Category:", categories, key="tab2_cat")
+            with f_col2:
+                search_query = st.text_input("Search by Vehicle Model:", placeholder="Type model name...", key="tab2_search")
 
-            st.markdown("<p style='font-weight: bold; color: #1e3a8a; margin-top: 20px;'>Spending Timeline Trend</p>", unsafe_allow_html=True)
-            st.line_chart(filtered_df.groupby("Date")["Amount ($)"].sum())
+            df['parsed_date'] = pd.to_datetime(df['Date']).dt.date
+            min_d = df['parsed_date'].min()
+            max_d = df['parsed_date'].max()
+
+            d_col1, d_col2 = st.columns(2)
+            with d_col1:
+                start_date = st.date_input("Start Date Horizon:", value=min_d, min_value=min_d, max_value=max_d, key="tab2_start")
+            with d_col2:
+                end_date = st.date_input("End Date Horizon:", value=max_d, min_value=min_d, max_value=max_d, key="tab2_end")
+
+            filtered_df = df.copy()
+            if selected_category != "All Categories":
+                filtered_df = filtered_df[filtered_df["Expense Category"] == selected_category]
+            if search_query.strip() != "":
+                filtered_df = filtered_df[filtered_df["Vehicle Model"].str.contains(search_query, case=False, na=False)]
+            
+            filtered_df = filtered_df[(filtered_df['parsed_date'] >= start_date) & (filtered_df['parsed_date'] <= end_date)]
+            filtered_df = filtered_df.drop(columns=['parsed_date'])
+
+            st.write("---")
+            
+            if not filtered_df.empty:
+                total_cost = filtered_df["Amount ($)"].sum()
+                total_km = filtered_df["Km Driven"].sum()
+                total_liters = filtered_df["Liters (L)"].sum()
+                
+                m1, m2, m3 = st.columns(3)
+                m1.metric("💰 Total Expenditure", f"${total_cost:,.2f}")
+                m2.metric("🛣️ Total Distance", f"{total_km:,.1f} km")
+                m3.metric("⛽ Total Fuel", f"{total_liters:,.1f} L")
+                
+                st.write("---")
+                st.markdown("#### 📋 Current Vehicle Expenses Log Matrix (Cloud Database)")
+                
+                df_display = filtered_df.copy()
+                df_display["Amount ($)"] = df_display["Amount ($)"].map(lambda x: f"{x:,.2f}")
+                df_display["Cost/100km ($)"] = df_display["Cost/100km ($)"].map(lambda x: f"{x:,.2f}")
+                df_display["Liters (L)"] = df_display["Liters (L)"].map(lambda x: f"{x:,.2f}")
+                df_display["Km Driven"] = df_display["Km Driven"].map(lambda x: f"{x:,.2f}")
+                
+                st.table(df_display[['Vehicle Model', 'Expense Category', 'Amount ($)', 'Date', 'Liters (L)', 'Km Driven', 'Cost/100km ($)']])
+                
+                st.download_button(
+                    label="📥 Download Filtered Expenses as CSV",
+                    data=filtered_df.to_csv(index=False).encode("utf-8-sig"),
+                    file_name="autocost_cloud_report.csv",
+                    mime="text/csv",
+                    use_container_width=True
+)
+                
+                st.write("---")
+                st.markdown("#### 📊 Advanced Expense Analytics Horizon")
+                g_col1, g_col2 = st.columns(2)
+                with g_col1:
+                    st.markdown("<p style='font-weight: bold; color: #1e3a8a;'>By Category ($)</p>", unsafe_allow_html=True)
+                    st.bar_chart(filtered_df.groupby("Expense Category")["Amount ($)"].sum())
+                with g_col2:
+                    st.markdown("<p style='font-weight: bold; color: #1e3a8a;'>By Vehicle Model ($)</p>", unsafe_allow_html=True)
+                    st.bar_chart(filtered_df.groupby("Vehicle Model")["Amount ($)"].sum())
+
+                st.markdown("<p style='font-weight: bold; color: #1e3a8a; margin-top: 20px;'>Spending Timeline Trend</p>", unsafe_allow_html=True)
+                st.line_chart(filtered_df.groupby("Date")["Amount ($)"].sum())
+            else:
+                st.warning("⚠️ No records found matching your filter criteria.")
         else:
-            st.warning("⚠️ No records found matching your filter criteria.")
-    else:
-        st.info("💡 No expenses registered in the cloud database yet.")
+            st.info("💡 No expenses registered in the cloud database yet.")
+            
+    except Exception as e:
+        st.error(f"Error loading data: {e}")
 
 # --- TAB 3: SƏNƏDLƏR VƏ XƏBƏRDARLIQLAR ---
 with tab3:
@@ -325,8 +330,9 @@ with tab3:
 
         expired_count = sum(1 for d in days_left_list if d < 0)
         soon_count = sum(1 for d in days_left_list if 0 <= d <= 30)
-
         if expired_count > 0:
             st.error(f"🚨 Attention! You have {expired_count} expired document(s)!")
         if soon_count > 0:
             st.warning(f"⚠️ Warning! You have {soon_count} document(s) expiring within the next 30 days.")
+    else:
+        st.info("💡 No documents registered yet.")
