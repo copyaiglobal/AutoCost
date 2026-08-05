@@ -295,8 +295,12 @@ with tab3:
             except Exception as e:
                 st.error(f"❌ Error saving document: {e}")
 
-    docs_res = supabase.table("vehicle_documents").select("*").eq("user_id", user_id).execute()
-    docs_data = docs_res.data
+    try:
+        docs_res = supabase.table("vehicle_documents").select("*").eq("user_id", user_id).execute()
+        docs_data = docs_res.data
+    except Exception as e:
+        st.error(f"Supabase detallı xəta: {e}")
+        docs_data = []
     
     if docs_data:
         docs_df = pd.DataFrame(docs_data)
