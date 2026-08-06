@@ -327,9 +327,7 @@ with tab2:
             
     except Exception as e:
         st.error(f"Error loading data: {e}")
-
-# --- TAB 3: SƏNƏDLƏR VƏ XƏBƏRDARLIQLAR ---
-with tab3:
+# ----Tab 3----
     st.markdown("### 📜 Document & Expiry Alerts Matrix")
     
     with st.form("document_form", clear_on_submit=True):
@@ -339,8 +337,16 @@ with tab3:
             doc_name = st.selectbox("Document Type:", ["Insurance 📜", "Technical Inspection 🔍", "Road Tax 🛣️", "Other 📄"])
         with doc_col2:
             doc_expiry_date = st.date_input("Document Expiry Date:", datetime.date.today() + datetime.timedelta(days=30))
-            st.write("") 
-            st.write("")
+            
+            # İngilis dilində tənzimləndi
+            alert_days = st.number_input(
+                "Alert Days Before Expiry:", 
+                min_value=1, 
+                max_value=90, 
+                value=7,
+                help="How many days in advance would you like to receive an email alert?"
+            )
+            
             add_doc_button = st.form_submit_button("Add Document Alert 🔔", use_container_width=True)
 
     if add_doc_button:
@@ -352,7 +358,8 @@ with tab3:
                     "user_id": user_id,
                     "vehicle_model": doc_car_model.strip(),
                     "doc_name": doc_name,
-                    "expiry_date": str(doc_expiry_date)
+                    "expiry_date": str(doc_expiry_date),
+                    "alert_days": alert_days
                 }).execute()
                 st.success("✅ Document alert successfully added to cloud database!")
                 st.rerun()
@@ -371,7 +378,8 @@ with tab3:
         docs_df = docs_df.rename(columns={
             "vehicle_model": "Vehicle Model",
             "doc_name": "Document Type",
-            "expiry_date": "Expiry Date"
+            "expiry_date": "Expiry Date",
+            "alert_days": "Alert Days"
         })
         
         st.write("---")
@@ -380,32 +388,40 @@ with tab3:
         
         status_list = []
         days_left_list = []
+        expired_count = 0
+        soon_count = 0
+        
         for idx, row in docs_df.iterrows():
             exp_date = datetime.datetime.strptime(row['Expiry Date'], "%Y-%m-%d").date()
             days_left = (exp_date - today).days
             days_left_list.append(days_left)
+            
+            alert_threshold = row.get('Alert Days', 7)
+            if pd.isna(alert_threshold):
+                alert_threshold = 7
+            else:
+                alert_threshold = int(alert_threshold)
+
             if days_left < 0:
                 status_list.append("🔴 Expired")
-            elif days_left <= 30:
+                expired_count += 1
+            elif days_left <= alert_threshold:
                 status_list.append(f"⚠️ Expiring Soon ({days_left} days left)")
+                soon_count += 1
             else:
                 status_list.append(f"🟢 Valid ({days_left} days left)")
                 
         docs_display = docs_df.copy()
         docs_display['Status'] = status_list
         
-        st.table(docs_display[['Vehicle Model', 'Document Type', 'Expiry Date', 'Status']])
+        st.table(docs_display[['Vehicle Model', 'Document Type', 'Expiry Date', 'Alert Days', 'Status']])
 
-        expired_count = sum(1 for d in days_left_list if d < 0)
-        soon_count = sum(1 for d in days_left_list if 0 <= d <= 30)
         if expired_count > 0:
             st.error(f"🚨 Attention! You have {expired_count} expired document(s)!")
         if soon_count > 0:
-            st.warning(f"⚠️ Warning! You have {soon_count} document(s) expiring within the next 30 days.")
-            
-        st.write("---")
+            st.warning(f"⚠️ Warning! You have {soon_count} document(s) reaching their alert threshold.")
+            st.write("---")
         
-        # Email Bildiriş Göndərmə Düyməsi
         if st.button("📧 Send Email Alerts for Due Documents", key="send_expiry_emails", use_container_width=True):
             sent_count = 0
             last_error = None
@@ -414,7 +430,13 @@ with tab3:
                 exp_date = datetime.datetime.strptime(row['Expiry Date'], "%Y-%m-%d").date()
                 days_left = (exp_date - today).days
                 
-                if days_left <= 30:
+                alert_threshold = row.get('Alert Days', 7)
+                if pd.isna(alert_threshold):
+                    alert_threshold = 7
+                else:
+                    alert_threshold = int(alert_threshold)
+                
+                if days_left <= alert_threshold:
                     doc_title = f"{row['Vehicle Model']} - {row['Document Type']}"
                     success, err_msg = send_alert_email(user_email, doc_title, str(exp_date))
                     if success:
@@ -428,5 +450,5 @@ with tab3:
                 st.error(f"❌ Email sending failed. Error details: {last_error}")
             else:
                 st.info("ℹ️ No documents require urgent email alerts at the moment.")
-        else:
-            st.info("💡 No documents registered yet.")
+    else:
+        st.info("💡 No documents registered yet.")
