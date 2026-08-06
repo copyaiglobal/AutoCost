@@ -174,11 +174,11 @@ with tab1:
                     "user_id": user_id,
                     "vehicle_model": car_model.strip(),
                     "expense_type": expense_type,
-                    "amount": round(final_amount,2)
+                    "amount": round(final_amount,2),
                     "date": str(expense_date),
                     "fuel_liters": fuel_liters,
                     "km_driven": km_driven,
-                    "cost_per_100km": round(cost_per_100km, 2),
+                    "cost_per_100km": round(cost_per_100km, 2)
                 }).execute()
                 st.session_state["filter_end"] = expense_date
                 st.success("✅ Expense successfully logged to your cloud database!")
