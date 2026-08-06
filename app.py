@@ -124,33 +124,35 @@ with tab1:
         car_model = st.text_input("Vehicle Model / Brand:", placeholder="e.g., Prius, Mercedes", key="exp_model")
         expense_type = st.selectbox("Expense Category:", ["Fuel ⛽", "Repair 🔧", "Insurance 📜", "Other 📦"], key="exp_type")
     with col2:
-        expense_amount = st.number_input("Expense Amount ($):", min_value=0.0, value=0.0, step=1.0, key="exp_amount")
-        # Valyuta seçimi və məzənnə (yalnız bu hissə qalmalıdır)
-        col_cur1, col_cur2 = st.columns(2)
-        with col_cur1:
-                currency = st.selectbox("Currency", ["USD", "EUR", "AZN"])
-        with col_cur2:
-                if currency == "USD":
-                    default_rate = 1.0
-                elif currency == "EUR":
-                    default_rate = 1.08  # 1 EUR təxmini 1.08 USD-dir
-                else:
-                    default_rate = 0.59  # 1 AZN təxmini 0.59 USD-dir
-                
-                exchange_rate = st.number_input("Exchange Rate to USD", value=default_rate, format="%.2f")
-
-        final_amount = expense_amount * exchange_rate
-                
-        exchange_rate = st.number_input("Exchange Rate to USD", value=default_rate, format="%.2f")
+        expense_amount = st.number_input("Expense Amount ($):", min_value=0.0, step=1.0)
+    
+    # Valyuta seçimi və məzənnə
+    col_cur1, col_cur2 = st.columns(2)
+    with col_cur1:
+        currency = st.selectbox("Currency", ["USD", "EUR", "AZN"], key="expense_currency")
+    with col_cur2:
+        if currency == "USD":
+            default_rate = 1.0
+        elif currency == "EUR":
+            default_rate = 1.08  # 1 EUR təxmini 1.08 USD-dir
+        else:
+            default_rate = 0.59  # 1 AZN təxmini 0.59 USD-dir
+        
+        exchange_rate = st.number_input("Exchange Rate to USD", value=default_rate, format="%.2f", key="exchange_rate_input")
+    
+    # Yekun məbləğ hesablanır
+    final_amount = expense_amount * exchange_rate
+    
+    expense_date = st.date_input("Transaction Date:", datetime.date.today(), key="expense_date_input")
 
             # Həmişə USD-yə çevrilmiş məbləğ hesablanır
-        final_amount = expense_amount * exchange_rate
+    final_amount = expense_amount * exchange_rate
                 # İstifadəçi istəsə məzənnəni dəyişə də bilər
-        exchange_rate = st.number_input("Exchange Rate to Base", value=exchange_rate, format="%.2f")
+    exchange_rate = st.number_input("Exchange Rate to Base", value=exchange_rate, format="%.2f")
 
             # Əsas məbləğ hesablanır (bazaya həmişə çevrilmiş ümumi məbləğ gedir)
-        final_amount = expense_amount * exchange_rate
-        expense_date = st.date_input("Transaction Date:", datetime.date.today(), key="exp_date")
+    final_amount = expense_amount * exchange_rate
+    expense_date = st.date_input("Transaction Date:", datetime.date.today(), key="exp_date")
 
     fuel_liters = 0.0
     km_driven = 0.0
