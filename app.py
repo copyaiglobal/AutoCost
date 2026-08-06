@@ -178,7 +178,7 @@ with tab1:
                     "date": str(expense_date),
                     "fuel_liters": fuel_liters,
                     "km_driven": km_driven,
-                    "cost_per_100km": round(cost_per_100km, 2)
+                    "cost_per_100km": round(cost_per_100km, 2),
                 }).execute()
                 st.session_state["filter_end"] = expense_date
                 st.success("✅ Expense successfully logged to your cloud database!")
