@@ -98,7 +98,6 @@ if st.session_state.user is None:
         st.markdown("### Sign In to Your Account")
         login_email = st.text_input("Email Address", placeholder="name@example.com", key="login_email")
         login_password = st.text_input("Password", type="password", key="login_pass")
-        
         if st.button("Sign In ✨", key="login_btn"):
             try:
                 res = supabase.auth.sign_in_with_password({"email": login_email, "password": login_password})
@@ -120,7 +119,7 @@ if st.session_state.user is None:
             except Exception as e:
                 st.error(f"❌ Registration failed: {e}")
                 
-    st.stop()
+        st.stop()
 
 # --- 👑 ƏSAS TƏTBİQ ---
 user_id = st.session_state.user.id
@@ -327,7 +326,9 @@ with tab2:
             
     except Exception as e:
         st.error(f"Error loading data: {e}")
-# ----Tab 3----
+
+# --- TAB 3: DOCUMENT EXPIRY ALERTS ---
+with tab3:
     st.markdown("### 📜 Document & Expiry Alerts Matrix")
     
     with st.form("document_form", clear_on_submit=True):
@@ -338,7 +339,6 @@ with tab2:
         with doc_col2:
             doc_expiry_date = st.date_input("Document Expiry Date:", datetime.date.today() + datetime.timedelta(days=30))
             
-            # İngilis dilində tənzimləndi
             alert_days = st.number_input(
                 "Alert Days Before Expiry:", 
                 min_value=1, 
@@ -420,7 +420,8 @@ with tab2:
             st.error(f"🚨 Attention! You have {expired_count} expired document(s)!")
         if soon_count > 0:
             st.warning(f"⚠️ Warning! You have {soon_count} document(s) reaching their alert threshold.")
-            st.write("---")
+            
+        st.write("---")
         
         if st.button("📧 Send Email Alerts for Due Documents", key="send_expiry_emails", use_container_width=True):
             sent_count = 0
