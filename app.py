@@ -61,19 +61,21 @@ h4 { color: #1e3a8a !important; font-weight: bold !important; margin-top: 15px !
 # --- 📧 RESEND EMAIL GÖNDƏRMƏ FUNKSİYASI ---
 resend.api_key = st.secrets["RESEND_API_KEY"]
 
-def send_alert_email(user_email, doc_name, expiry_date):
+def send_alert_email(user_email, doc_list_html):
     try:
         params = {
             "from": "AutoCost <onboarding@resend.dev>",
             "to": [user_email],
-            "subject": f"⚠️ AutoCost Alert: Your {doc_name} is expiring soon!",
+            "subject": "⚠️ AutoCost Alert: Documents Expiring Soon!",
             "html": f"""
             <div style="font-family: Arial, sans-serif; color: #0f172a; padding: 20px;">
                 <h2 style="color: #1e3a8a;">AutoCost Document Alert 🚗</h2>
                 <p>Hello,</p>
-                <p>This is an automated reminder from your vehicle diary.</p>
-                <p>Your document <b>"{doc_name}"</b> is scheduled to expire on <b style="color: #dc2626;">{expiry_date}</b>.</p>
-                <p>Please take action to renew it on time.</p>
+                <p>This is an automated reminder from your vehicle diary. The following document(s) require your attention:</p>
+                <ul>
+                    {doc_list_html}
+                </ul>
+                <p>Please take action to renew them on time.</p>
                 <br>
                 <p>Best regards,<br><b>AutoCost Team 🚀</b></p>
             </div>
@@ -361,6 +363,8 @@ with tab3:
                     "expiry_date": str(doc_expiry_date),
                     "alert_days": alert_days
                 }).execute()
+                # Yeni sənəd əlavə olunduqda yaddaşı sıfırlayırıq ki, təzə siyahı üçün yenidən e-poçt getsin
+                st.session_state.pop("last_sent_docs", None)
                 st.success("✅ Document alert successfully added to cloud database!")
                 st.rerun()
             except Exception as e:
@@ -390,6 +394,7 @@ with tab3:
         days_left_list = []
         expired_count = 0
         soon_count = 0
+        due_docs_for_email = []
         
         for idx, row in docs_df.iterrows():
             exp_date = datetime.datetime.strptime(row['Expiry Date'], "%Y-%m-%d").date()
@@ -405,9 +410,11 @@ with tab3:
             if days_left < 0:
                 status_list.append("🔴 Expired")
                 expired_count += 1
+                due_docs_for_email.append(f"<li><b>{row['Vehicle Model']} - {row['Document Type']}</b> (EXPIRED by {-days_left} days)</li>")
             elif days_left <= alert_threshold:
                 status_list.append(f"⚠️ Expiring Soon ({days_left} days left)")
                 soon_count += 1
+                due_docs_for_email.append(f"<li><b>{row['Vehicle Model']} - {row['Document Type']}</b> (Expires in {days_left} days)</li>")
             else:
                 status_list.append(f"🟢 Valid ({days_left} days left)")
                 
@@ -415,35 +422,21 @@ with tab3:
         docs_display['Status'] = status_list
         
         st.table(docs_display[['Vehicle Model', 'Document Type', 'Expiry Date', 'Alert Days', 'Status']])
-
         if expired_count > 0:
             st.error(f"🚨 Attention! You have {expired_count} expired document(s)!")
         if soon_count > 0:
             st.warning(f"⚠️ Warning! You have {soon_count} document(s) reaching their alert threshold.")
             
-        # --- AVTOMATİK E-POÇT YOXLAMA VƏ GÖNDƏRMƏ BLOKU ---
-        # Bu hissə səhifə hər dəfə açılanda (və ya yenilənəndə) arxa fonda avtomatik işləyir
-        # --- AVTOMATİK E-POÇT YOXLAMA VƏ GÖNDƏRMƏ BLOKU ---
-        # Hər səhifə yenilənəndə limitə çatan sənədləri yoxlayır
-        sent_count = 0
-        for idx, row in docs_df.iterrows():
-            exp_date = datetime.datetime.strptime(row['Expiry Date'], "%Y-%m-%d").date()
-            days_left = (exp_date - today).days
-            
-            alert_threshold = row.get('Alert Days', 7)
-            if pd.isna(alert_threshold):
-                alert_threshold = 7
-            else:
-                alert_threshold = int(alert_threshold)
-            
-            if days_left <= alert_threshold:
-                doc_title = f"{row['Vehicle Model']} - {row['Document Type']}"
-                success, err_msg = send_alert_email(user_email, doc_title, str(exp_date))
+        # --- BÜTÜN SƏNƏDLƏRİ BİR MƏKTUBDA GÖNDƏRMƏ MƏNTİQİ ---
+        if due_docs_for_email:
+            current_due_signature = str(due_docs_for_email)
+            if st.session_state.get("last_sent_docs") != current_due_signature:
+                doc_list_html = "".join(due_docs_for_email)
+                success, err_msg = send_alert_email(user_email, doc_list_html)
                 if success:
-                    sent_count += 1
-        
-        if sent_count > 0:
-            st.toast(f"📧 Automatically sent {sent_count} email alert(s) for due documents!", icon="🚀")
-            
+                    st.toast("📧 Automated email alert sent with all due documents!", icon="🚀")
+                    st.session_state["last_sent_docs"] = current_due_signature
+                else:
+                    st.error(f"❌ Email error: {err_msg}")
     else:
         st.info("💡 No documents registered yet.")
