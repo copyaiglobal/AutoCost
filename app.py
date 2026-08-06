@@ -119,7 +119,7 @@ with tab1:
     
     col1, col2 = st.columns(2)
     with col1:
-        car_model = st.text_input("Vehicle Model / Brand:", placeholder="e.g., Toyota Prius", key="car_model_input")
+        car_model = st.text_input("Vehicle Model / Brand:", placeholder="e.g., Toyota , Prius", key="car_model_input")
         expense_type = st.selectbox("Expense Category:", ["Fuel ⛽", "Repair 🔧", "Maintenance 🛠️", "Insurance 📄", "Tax 💰", "Other 📌"], key="expense_type_input")
 
     with col2:
