@@ -81,6 +81,10 @@ def send_alert_email(user_email, doc_list_html):
             </div>
             """
         }
+        
+        # --- Resend-ə gedən parametrləri ekranda görmək üçün ---
+        st.write("Resend-ə gedən parametrlər:", params)
+        
         resend.Emails.send(params)
         return True, None
     except Exception as e:
