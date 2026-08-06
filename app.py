@@ -80,10 +80,9 @@ def send_alert_email(user_email, doc_name, expiry_date):
             """
         }
         resend.Emails.send(params)
-        return True
+        return True, None
     except Exception as e:
-        print(f"Email sending error: {e}")
-        return False
+        return False, str(e)
 
 # --- 🔐 SESSION STATE (İSTİFADƏÇİ GİRİŞİ) ---
 if "user" not in st.session_state:
@@ -409,19 +408,25 @@ with tab3:
         # Email Bildiriş Göndərmə Düyməsi
         if st.button("📧 Send Email Alerts for Due Documents", key="send_expiry_emails", use_container_width=True):
             sent_count = 0
+            last_error = None
+            
             for idx, row in docs_df.iterrows():
                 exp_date = datetime.datetime.strptime(row['Expiry Date'], "%Y-%m-%d").date()
                 days_left = (exp_date - today).days
                 
                 if days_left <= 30:
                     doc_title = f"{row['Vehicle Model']} - {row['Document Type']}"
-                    success = send_alert_email(user_email, doc_title, str(exp_date))
+                    success, err_msg = send_alert_email(user_email, doc_title, str(exp_date))
                     if success:
                         sent_count += 1
+                    else:
+                        last_error = err_msg
             
             if sent_count > 0:
                 st.success(f"✅ Successfully sent {sent_count} email alert(s) to {user_email}!")
+            elif last_error:
+                st.error(f"❌ Email sending failed. Error details: {last_error}")
             else:
                 st.info("ℹ️ No documents require urgent email alerts at the moment.")
-    else:
-        st.info("💡 No documents registered yet.")
+        else:
+            st.info("💡 No documents registered yet.")
