@@ -125,20 +125,23 @@ with tab1:
         expense_type = st.selectbox("Expense Category:", ["Fuel ⛽", "Repair 🔧", "Insurance 📜", "Other 📦"], key="exp_type")
     with col2:
         expense_amount = st.number_input("Expense Amount ($):", min_value=0.0, value=0.0, step=1.0, key="exp_amount")
-        # Valyuta seçimi (Əsas valyuta: USD)
+        # Valyuta seçimi və məzənnə (yalnız bu hissə qalmalıdır)
         col_cur1, col_cur2 = st.columns(2)
         with col_cur1:
                 currency = st.selectbox("Currency", ["USD", "EUR", "AZN"])
         with col_cur2:
-                # Seçilən valyutanın USD-yə qarşı məzənnəsi
                 if currency == "USD":
                     default_rate = 1.0
                 elif currency == "EUR":
                     default_rate = 1.08  # 1 EUR təxmini 1.08 USD-dir
                 else:
-                    default_rate = 0.59  # 1 AZN təxmini 0.59 USD-dir (1 / 1.7)
+                    default_rate = 0.59  # 1 AZN təxmini 0.59 USD-dir
                 
                 exchange_rate = st.number_input("Exchange Rate to USD", value=default_rate, format="%.2f")
+
+        final_amount = expense_amount * exchange_rate
+                
+        exchange_rate = st.number_input("Exchange Rate to USD", value=default_rate, format="%.2f")
 
             # Həmişə USD-yə çevrilmiş məbləğ hesablanır
         final_amount = expense_amount * exchange_rate
