@@ -64,7 +64,7 @@ resend.api_key = st.secrets["RESEND_API_KEY"]
 def send_alert_email(user_email, doc_list_html):
     try:
         params = {
-            "from": "AutoCost <onboarding@resend.dev>",
+            "from": "onboarding@resend.dev",
             "to": [user_email],
             "subject": "⚠️ AutoCost Alert: Documents Expiring Soon!",
             "html": f"""
