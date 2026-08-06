@@ -125,31 +125,21 @@ with tab1:
         expense_type = st.selectbox("Expense Category:", ["Fuel ⛽", "Repair 🔧", "Maintenance 🛠️", "Insurance 📄", "Tax 💰", "Other 📌"], key="expense_type_input")
         currency = st.selectbox("Currency", ["USD", "EUR", "AZN"], key="expense_currency")
 
-        with col2:
-            expense_amount = st.number_input("Expense Amount ($):", min_value=0.0, step=1.0, key="expense_amount_input")
-    
-            if currency == "USD":
-                default_rate = 1.0
-            elif currency == "EUR":
-                default_rate = 1.08
-            else:
-                default_rate = 0.59
+    with col2:
+        expense_amount = st.number_input("Expense Amount ($):", min_value=0.0, step=1.0, key="expense_amount_input")
         
-            exchange_rate = st.number_input("Exchange Rate to USD", value=default_rate, format="%.2f", key="exchange_rate_input")
-            expense_date = st.date_input("Transaction Date:", datetime.date.today(), key="expense_date_input")
+        if currency == "USD":
+            default_rate = 1.0
+        elif currency == "EUR":
+            default_rate = 1.08
+        else:
+            default_rate = 0.59
+        
+        exchange_rate = st.number_input("Exchange Rate to USD", value=default_rate, format="%.2f", key="exchange_rate_input")
+        expense_date = st.date_input("Transaction Date:", datetime.date.today(), key="expense_date_input")
 
+    # Yekun məbləğ bir dəfə düzgün hesablanır
     final_amount = expense_amount * exchange_rate
-    
-    expense_date = st.date_input("Transaction Date:", datetime.date.today(), key="expense_date_input")
-
-            # Həmişə USD-yə çevrilmiş məbləğ hesablanır
-    final_amount = expense_amount * exchange_rate
-                # İstifadəçi istəsə məzənnəni dəyişə də bilər
-    exchange_rate = st.number_input("Exchange Rate to Base", value=exchange_rate, format="%.2f")
-
-            # Əsas məbləğ hesablanır (bazaya həmişə çevrilmiş ümumi məbləğ gedir)
-    final_amount = expense_amount * exchange_rate
-    expense_date = st.date_input("Transaction Date:", datetime.date.today(), key="exp_date")
 
     fuel_liters = 0.0
     km_driven = 0.0
@@ -180,7 +170,7 @@ with tab1:
                     "user_id": user_id,
                     "vehicle_model": car_model.strip(),
                     "expense_type": expense_type,
-                    "amount": round(final_amount,2),
+                    "amount": round(final_amount, 2),
                     "date": str(expense_date),
                     "fuel_liters": fuel_liters,
                     "km_driven": km_driven,
