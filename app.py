@@ -3,6 +3,7 @@ import datetime
 from supabase import create_client
 import pandas as pd
 import plotly.express as px
+import resend
 
 try:
     url = st.secrets["SUPABASE_URL"]
@@ -11,6 +12,7 @@ try:
 except Exception as e:
     st.error(f"Supabase connection failed. Please check your secrets configuration. Error: {e}")
     st.stop()
+
 # --- 🎨 SƏHİFƏ AYARLARI VƏ DİZAYN ---
 st.set_page_config(page_title="AutoCost - Cloud SaaS", page_icon="🚗", layout="centered")
 
@@ -56,11 +58,37 @@ h4 { color: #1e3a8a !important; font-weight: bold !important; margin-top: 15px !
 </style>
 """, unsafe_allow_html=True)
 
+# --- 📧 RESEND EMAIL GÖNDƏRMƏ FUNKSİYASI ---
+resend.api_key = st.secrets["RESEND_API_KEY"]
+
+def send_alert_email(user_email, doc_name, expiry_date):
+    try:
+        params = {
+            "from": "AutoCost <onboarding@resend.dev>",
+            "to": [user_email],
+            "subject": f"⚠️ AutoCost Alert: Your {doc_name} is expiring soon!",
+            "html": f"""
+            <div style="font-family: Arial, sans-serif; color: #0f172a; padding: 20px;">
+                <h2 style="color: #1e3a8a;">AutoCost Document Alert 🚗</h2>
+                <p>Hello,</p>
+                <p>This is an automated reminder from your vehicle diary.</p>
+                <p>Your document <b>"{doc_name}"</b> is scheduled to expire on <b style="color: #dc2626;">{expiry_date}</b>.</p>
+                <p>Please take action to renew it on time.</p>
+                <br>
+                <p>Best regards,<br><b>AutoCost Team 🚀</b></p>
+            </div>
+            """
+        }
+        resend.Emails.send(params)
+        return True
+    except Exception as e:
+        print(f"Email sending error: {e}")
+        return False
+
 # --- 🔐 SESSION STATE (İSTİFADƏÇİ GİRİŞİ) ---
 if "user" not in st.session_state:
     st.session_state.user = None
 
-# Əgər istifadəçi daxil olmayıbsa, GİRİŞ / QEYDİYYAT EKRANI göstər
 if st.session_state.user is None:
     st.markdown("<h2 style='text-align: center; color: #1e3a8a;'>🚗 AutoCost Cloud SaaS</h2>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; color: #475569;'>Please sign in or create an account to manage your secure vehicle diary.</p>", unsafe_allow_html=True)
@@ -93,12 +121,12 @@ if st.session_state.user is None:
             except Exception as e:
                 st.error(f"❌ Registration failed: {e}")
                 
-    st.stop() # İstifadəçi daxil olmayıbsa kodun davamı oxunmur
-# --- 👑 ƏSAS TƏTBİQ (İstifadəçi daxil olduqdan sonra) ---
+    st.stop()
+
+# --- 👑 ƏSAS TƏTBİQ ---
 user_id = st.session_state.user.id
 user_email = st.session_state.user.email
 
-# Sidebar - Profil və Çıxış
 with st.sidebar:
     st.markdown(f"👤 Logged in as:\n{user_email}")
     st.write("---")
@@ -113,13 +141,13 @@ st.write("---")
 
 tab1, tab2, tab3 = st.tabs(["💰 Add Expense", "🔍 Filter, Search & Analytics", "📜 Document Expiry Alerts"])
 
-       # --- TAB 1: XƏRC DAXİLMƏ ---
+# --- TAB 1: XƏRC DAXİLMƏ ---
 with tab1:
     st.markdown("### 💰 Log New Vehicle Expense")
     
     col1, col2 = st.columns(2)
     with col1:
-        car_model = st.text_input("Vehicle Model / Brand:", placeholder="e.g., Toyota , Prius", key="car_model_input")
+        car_model = st.text_input("Vehicle Model / Brand:", placeholder="e.g., Toyota Prius", key="car_model_input")
         expense_type = st.selectbox("Expense Category:", ["Fuel ⛽", "Repair 🔧", "Maintenance 🛠️", "Insurance 📄", "Tax 💰", "Other 📌"], key="expense_type_input")
 
     with col2:
@@ -138,10 +166,7 @@ with tab1:
             
             exchange_rate = st.number_input("Exchange Rate to USD", value=default_rate, format="%.2f", key="exchange_rate_input")
 
-    # Transaction Date indi tam ortada, hər iki sütunun əhatə etdiyi genişlikdə olacaq
     expense_date = st.date_input("Transaction Date:", datetime.date.today(), key="expense_date_input")
-
-    # Yekun məbləğ hesablanır
     final_amount = expense_amount * exchange_rate
 
     fuel_liters = 0.0
@@ -159,7 +184,6 @@ with tab1:
 
     st.write(" ")
     add_expense_btn = st.button("Add Expense to Cloud Log ✨", use_container_width=True)
-
     if add_expense_btn:
         if car_model.strip() == "" or expense_amount <= 0:
             st.error("⚠️ Please enter the vehicle model and ensure the amount is greater than 0!")
@@ -183,16 +207,16 @@ with tab1:
                 st.success("✅ Expense successfully logged to your cloud database!")
             except Exception as e:
                 st.error(f"❌ Error saving expense: {e}")
+
 # --- TAB 2: FILTER, SEARCH & ANALYTICS ---
 with tab2:
     st.markdown("### 🔍 Filter, Search & Advanced Analytics Horizon")
-    
+
     try:
         res = supabase.table("expenses").select("*").eq("user_id", user_id).execute()
         data = res.data
         
         if data:
-            import pandas as pd
             df = pd.DataFrame(data)
             
             df = df.rename(columns={
@@ -216,7 +240,6 @@ with tab2:
             min_date = df["Date"].min().date()
             max_date = df["Date"].max().date()
             
-            # ---> 2-ci kodu BURAYA qoyursan:
             if "filter_end" not in st.session_state:
                 st.session_state["filter_end"] = max_date
             
@@ -225,6 +248,7 @@ with tab2:
                 start_date = st.date_input("Start Date Horizon", min_date, key="filter_start")
             with d_col2:
                 end_date = st.date_input("End Date Horizon", key="filter_end")
+                
             filtered_df = df.copy()
             if selected_category != "All Categories":
                 filtered_df = filtered_df[filtered_df["Expense Category"] == selected_category]
@@ -255,7 +279,6 @@ with tab2:
                 
                 st.table(df_display[['Vehicle Model', 'Expense Category', 'Amount ($)', 'Date', 'Liters (L)', 'Km Driven', 'Cost/100km ($)']])
                 
-                # Yalnız istifadəçiyə lazım olan sütunları seçirik (id, user_id və inserted_at xaric edilir)
                 df_export = filtered_df[['Vehicle Model', 'Expense Category', 'Amount ($)', 'Date', 'Liters (L)', 'Km Driven', 'Cost/100km ($)']].copy()
                 
                 st.download_button(
@@ -265,7 +288,7 @@ with tab2:
                     mime="text/csv",
                     use_container_width=True
                 )
-                
+
                 st.write("---")
                 st.markdown("#### 📊 Advanced Expense Analytics Horizon")
                 g_col1, g_col2 = st.columns(2)
@@ -281,8 +304,6 @@ with tab2:
                 timeline_df = filtered_df.groupby("Date")["Amount ($)"].sum().reset_index()
                 timeline_df["Date"] = pd.to_datetime(timeline_df["Date"])
                 timeline_df = timeline_df.sort_values("Date")
-                
-                # Tarixi səliqəli string formatına çeviririk ki, saatlar (00:00) ümumiyyətlə görünməsin
                 timeline_df["Date_Str"] = timeline_df["Date"].dt.strftime("%b %d, %Y")
                 
                 fig = px.line(
@@ -307,6 +328,7 @@ with tab2:
             
     except Exception as e:
         st.error(f"Error loading data: {e}")
+
 # --- TAB 3: SƏNƏDLƏR VƏ XƏBƏRDARLIQLAR ---
 with tab3:
     st.markdown("### 📜 Document & Expiry Alerts Matrix")
@@ -381,5 +403,25 @@ with tab3:
             st.error(f"🚨 Attention! You have {expired_count} expired document(s)!")
         if soon_count > 0:
             st.warning(f"⚠️ Warning! You have {soon_count} document(s) expiring within the next 30 days.")
+            
+        st.write("---")
+        
+        # Email Bildiriş Göndərmə Düyməsi
+        if st.button("📧 Send Email Alerts for Due Documents", key="send_expiry_emails", use_container_width=True):
+            sent_count = 0
+            for idx, row in docs_df.iterrows():
+                exp_date = datetime.datetime.strptime(row['Expiry Date'], "%Y-%m-%d").date()
+                days_left = (exp_date - today).days
+                
+                if days_left <= 30:
+                    doc_title = f"{row['Vehicle Model']} - {row['Document Type']}"
+                    success = send_alert_email(user_email, doc_title, str(exp_date))
+                    if success:
+                        sent_count += 1
+            
+            if sent_count > 0:
+                st.success(f"✅ Successfully sent {sent_count} email alert(s) to {user_email}!")
+            else:
+                st.info("ℹ️ No documents require urgent email alerts at the moment.")
     else:
         st.info("💡 No documents registered yet.")

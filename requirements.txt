@@ -3,3 +3,4 @@ supabase
 streamlit
 plotly
 starlette<0.40.0
+resend
