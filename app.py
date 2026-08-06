@@ -113,8 +113,6 @@ st.write("---")
 
 tab1, tab2, tab3 = st.tabs(["💰 Add Expense", "🔍 Filter, Search & Analytics", "📜 Document Expiry Alerts"])
 
-# --- TAB 1: XƏRC DAXİLMƏ ---
-
        # --- TAB 1: XƏRC DAXİLMƏ ---
 with tab1:
     st.markdown("### 💰 Log New Vehicle Expense")
@@ -123,22 +121,26 @@ with tab1:
     with col1:
         car_model = st.text_input("Vehicle Model / Brand:", placeholder="e.g., Toyota Prius", key="car_model_input")
         expense_type = st.selectbox("Expense Category:", ["Fuel ⛽", "Repair 🔧", "Maintenance 🛠️", "Insurance 📄", "Tax 💰", "Other 📌"], key="expense_type_input")
-        currency = st.selectbox("Currency", ["USD", "EUR", "AZN"], key="expense_currency")
+        expense_date = st.date_input("Transaction Date:", datetime.date.today(), key="expense_date_input")
 
     with col2:
         expense_amount = st.number_input("Expense Amount ($):", min_value=0.0, step=1.0, key="expense_amount_input")
         
-        if currency == "USD":
-            default_rate = 1.0
-        elif currency == "EUR":
-            default_rate = 1.08
-        else:
-            default_rate = 0.59
-        
-        exchange_rate = st.number_input("Exchange Rate to USD", value=default_rate, format="%.2f", key="exchange_rate_input")
-        expense_date = st.date_input("Transaction Date:", datetime.date.today(), key="expense_date_input")
+        # Məbləğin dərhal altından valyuta və məzənnə yanaşı gəlir
+        c_col1, c_col2 = st.columns(2)
+        with c_col1:
+            currency = st.selectbox("Currency", ["USD", "EUR", "AZN"], key="expense_currency")
+        with c_col2:
+            if currency == "USD":
+                default_rate = 1.0
+            elif currency == "EUR":
+                default_rate = 1.08
+            else:
+                default_rate = 0.59
+            
+            exchange_rate = st.number_input("Exchange Rate to USD", value=default_rate, format="%.2f", key="exchange_rate_input")
 
-    # Yekun məbləğ bir dəfə düzgün hesablanır
+    # Yekun məbləğ hesablanır
     final_amount = expense_amount * exchange_rate
 
     fuel_liters = 0.0
