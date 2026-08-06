@@ -125,6 +125,24 @@ with tab1:
         expense_type = st.selectbox("Expense Category:", ["Fuel ⛽", "Repair 🔧", "Insurance 📜", "Other 📦"], key="exp_type")
     with col2:
         expense_amount = st.number_input("Expense Amount ($):", min_value=0.0, value=0.0, step=1.0, key="exp_amount")
+        # Valyuta seçimi və məzənnə
+        col_cur1, col_cur2 = st.columns(2)
+        with col_cur1:
+                currency = st.selectbox("Currency", ["AZN", "USD", "EUR"])
+        with col_cur2:
+                # Əgər əsas valyuta AZN-dirsə, USD və ya EUR üçün məzənnə təyin edirik
+                if currency == "AZN":
+                    exchange_rate = 1.0
+                elif currency == "USD":
+                    exchange_rate = 1.7  # Təxmini və ya istəyə görə tənzimlənən məzənnə
+                else:
+                    exchange_rate = 1.85 # EUR üçün təxmini məzənnə
+                
+                # İstifadəçi istəsə məzənnəni dəyişə də bilər
+                exchange_rate = st.number_input("Exchange Rate to Base", value=exchange_rate, format="%.2f")
+
+            # Əsas məbləğ hesablanır (bazaya həmişə çevrilmiş ümumi məbləğ gedir)
+        final_amount = expense_amount * exchange_rate
         expense_date = st.date_input("Transaction Date:", datetime.date.today(), key="exp_date")
 
     fuel_liters = 0.0
@@ -156,7 +174,7 @@ with tab1:
                     "user_id": user_id,
                     "vehicle_model": car_model.strip(),
                     "expense_type": expense_type,
-                    "amount": expense_amount,
+                    "amount": round(final_amount,2)
                     "date": str(expense_date),
                     "fuel_liters": fuel_liters,
                     "km_driven": km_driven,
