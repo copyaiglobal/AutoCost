@@ -421,12 +421,12 @@ with tab3:
         if soon_count > 0:
             st.warning(f"⚠️ Warning! You have {soon_count} document(s) reaching their alert threshold.")
             
-        st.write("---")
-        
-        if st.button("📧 Send Email Alerts for Due Documents", key="send_expiry_emails", use_container_width=True):
+        # --- AVTOMATİK E-POÇT YOXLAMA VƏ GÖNDƏRMƏ BLOKU ---
+        # Bu hissə səhifə hər dəfə açılanda (və ya yenilənəndə) arxa fonda avtomatik işləyir
+        if "email_checked_today" not in st.session_state:
+            st.session_state.email_checked_today = False
+        if not st.session_state.email_checked_today:
             sent_count = 0
-            last_error = None
-            
             for idx, row in docs_df.iterrows():
                 exp_date = datetime.datetime.strptime(row['Expiry Date'], "%Y-%m-%d").date()
                 days_left = (exp_date - today).days
@@ -437,19 +437,18 @@ with tab3:
                 else:
                     alert_threshold = int(alert_threshold)
                 
+                # Əgər qalıq gün təyin olunan limitdən azdırsa, avtomatik göndər
                 if days_left <= alert_threshold:
                     doc_title = f"{row['Vehicle Model']} - {row['Document Type']}"
                     success, err_msg = send_alert_email(user_email, doc_title, str(exp_date))
                     if success:
                         sent_count += 1
-                    else:
-                        last_error = err_msg
             
             if sent_count > 0:
-                st.success(f"✅ Successfully sent {sent_count} email alert(s) to {user_email}!")
-            elif last_error:
-                st.error(f"❌ Email sending failed. Error details: {last_error}")
-            else:
-                st.info("ℹ️ No documents require urgent email alerts at the moment.")
+                st.toast(f"📧 Automatically sent {sent_count} email alert(s) for due documents!", icon="🚀")
+            
+            # Həmin sessiyada bir dəfə yoxlasın ki, səhifəni yenilədikdə təkrar e-poçt spamı olmasın
+            st.session_state.email_checked_today = True
+
     else:
         st.info("💡 No documents registered yet.")
