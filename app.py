@@ -125,21 +125,25 @@ with tab1:
         expense_type = st.selectbox("Expense Category:", ["Fuel ⛽", "Repair 🔧", "Insurance 📜", "Other 📦"], key="exp_type")
     with col2:
         expense_amount = st.number_input("Expense Amount ($):", min_value=0.0, value=0.0, step=1.0, key="exp_amount")
-        # Valyuta seçimi və məzənnə
+        # Valyuta seçimi (Əsas valyuta: USD)
         col_cur1, col_cur2 = st.columns(2)
         with col_cur1:
-                currency = st.selectbox("Currency", ["AZN", "USD", "EUR"])
+                currency = st.selectbox("Currency", ["USD", "EUR", "AZN"])
         with col_cur2:
-                # Əgər əsas valyuta AZN-dirsə, USD və ya EUR üçün məzənnə təyin edirik
-                if currency == "AZN":
-                    exchange_rate = 1.0
-                elif currency == "USD":
-                    exchange_rate = 1.7  # Təxmini və ya istəyə görə tənzimlənən məzənnə
+                # Seçilən valyutanın USD-yə qarşı məzənnəsi
+                if currency == "USD":
+                    default_rate = 1.0
+                elif currency == "EUR":
+                    default_rate = 1.08  # 1 EUR təxmini 1.08 USD-dir
                 else:
-                    exchange_rate = 1.85 # EUR üçün təxmini məzənnə
+                    default_rate = 0.59  # 1 AZN təxmini 0.59 USD-dir (1 / 1.7)
                 
+                exchange_rate = st.number_input("Exchange Rate to USD", value=default_rate, format="%.2f")
+
+            # Həmişə USD-yə çevrilmiş məbləğ hesablanır
+        final_amount = expense_amount * exchange_rate
                 # İstifadəçi istəsə məzənnəni dəyişə də bilər
-                exchange_rate = st.number_input("Exchange Rate to Base", value=exchange_rate, format="%.2f")
+        exchange_rate = st.number_input("Exchange Rate to Base", value=exchange_rate, format="%.2f")
 
             # Əsas məbləğ hesablanır (bazaya həmişə çevrilmiş ümumi məbləğ gedir)
         final_amount = expense_amount * exchange_rate
