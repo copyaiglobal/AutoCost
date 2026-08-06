@@ -423,32 +423,27 @@ with tab3:
             
         # --- AVTOMATİK E-POÇT YOXLAMA VƏ GÖNDƏRMƏ BLOKU ---
         # Bu hissə səhifə hər dəfə açılanda (və ya yenilənəndə) arxa fonda avtomatik işləyir
-        if "email_checked_today" not in st.session_state:
-            st.session_state.email_checked_today = False
-        if not st.session_state.email_checked_today:
-            sent_count = 0
-            for idx, row in docs_df.iterrows():
-                exp_date = datetime.datetime.strptime(row['Expiry Date'], "%Y-%m-%d").date()
-                days_left = (exp_date - today).days
-                
-                alert_threshold = row.get('Alert Days', 7)
-                if pd.isna(alert_threshold):
-                    alert_threshold = 7
-                else:
-                    alert_threshold = int(alert_threshold)
-                
-                # Əgər qalıq gün təyin olunan limitdən azdırsa, avtomatik göndər
-                if days_left <= alert_threshold:
-                    doc_title = f"{row['Vehicle Model']} - {row['Document Type']}"
-                    success, err_msg = send_alert_email(user_email, doc_title, str(exp_date))
-                    if success:
-                        sent_count += 1
+        # --- AVTOMATİK E-POÇT YOXLAMA VƏ GÖNDƏRMƏ BLOKU ---
+        # Hər səhifə yenilənəndə limitə çatan sənədləri yoxlayır
+        sent_count = 0
+        for idx, row in docs_df.iterrows():
+            exp_date = datetime.datetime.strptime(row['Expiry Date'], "%Y-%m-%d").date()
+            days_left = (exp_date - today).days
             
-            if sent_count > 0:
-                st.toast(f"📧 Automatically sent {sent_count} email alert(s) for due documents!", icon="🚀")
+            alert_threshold = row.get('Alert Days', 7)
+            if pd.isna(alert_threshold):
+                alert_threshold = 7
+            else:
+                alert_threshold = int(alert_threshold)
             
-            # Həmin sessiyada bir dəfə yoxlasın ki, səhifəni yenilədikdə təkrar e-poçt spamı olmasın
-            st.session_state.email_checked_today = True
-
+            if days_left <= alert_threshold:
+                doc_title = f"{row['Vehicle Model']} - {row['Document Type']}"
+                success, err_msg = send_alert_email(user_email, doc_title, str(exp_date))
+                if success:
+                    sent_count += 1
+        
+        if sent_count > 0:
+            st.toast(f"📧 Automatically sent {sent_count} email alert(s) for due documents!", icon="🚀")
+            
     else:
         st.info("💡 No documents registered yet.")
