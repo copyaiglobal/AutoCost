@@ -86,62 +86,51 @@ def send_alert_email(user_email, doc_list_html):
     except Exception as e:
         return False, str(e)
 
-# --- 🔐 SESSION STATE (İSTİFADƏÇİ GİRİŞİ) ---
-if "user" not in st.session_state:
-    st.session_state.user = None
-
-if st.session_state.user is None:
-    st.markdown("<h2 style='text-align: center; color: #1e3a8a;'>🚗 AutoCost Cloud SaaS</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #475569;'>Please sign in or create an account to manage your secure vehicle diary.</p>", unsafe_allow_html=True)
-# Əgər yoxdursa, bunu ən yuxarıya, session_state olan hissəyə əlavə et:
+# --- 🔐 SESSION STATE (PRO STATUS) ---
 if "is_pro" not in st.session_state:
-    st.session_state.is_pro = False
-    auth_tab1, auth_tab2 = st.tabs(["🔑 Sign In", "📝 Register"])
-    
-    with auth_tab1:
-        st.markdown("### Sign In to Your Account")
-        login_email = st.text_input("Email Address", placeholder="name@example.com", key="login_email")
-        login_password = st.text_input("Password", type="password", key="login_pass")
-        if st.button("Sign In ✨", key="login_btn"):
-            try:
-                res = supabase.auth.sign_in_with_password({"email": login_email, "password": login_password})
-                st.session_state.user = res.user
-                st.success("🎉Successfully signed in!")
-                st.rerun()
-            except Exception as e:
-                st.error(f"❌ Login failed: {e}")
-                
-    with auth_tab2:
-        st.markdown("### Create New Account")
-        reg_email = st.text_input("Email Address", placeholder="name@example.com", key="reg_email")
-        reg_password = st.text_input("Password", type="password", key="reg_pass")
-        
-        if st.button("Register Account 🚀", key="reg_btn"):
-            try:
-                res = supabase.auth.sign_up({"email": reg_email, "password": reg_password})
-                st.success("✅ Account created successfully! You can now sign in.")
-            except Exception as e:
-                st.error(f"❌ Registration failed: {e}")
-                
-        st.stop()
+  st.session_state.is_pro = False
 
 # --- 👑 ƏSAS TƏTBİQ ---
 user_id = st.session_state.user.id
 user_email = st.session_state.user.email
 
 with st.sidebar:
-    st.markdown(f"👤 Logged in as:\n{user_email}")
-    st.write("---")
-    if st.button("🚪 Sign Out", use_container_width=True):
-        supabase.auth.sign_out()
-        st.session_state.user = None
-        st.rerun()
+  st.markdown(f"👤 Logged in as:\n{user_email}")
+  if st.session_state.is_pro:
+    st.markdown(
+        "<p style='color: #16a34a; font-weight: bold;'>💎 Pro Status:"
+        " Active</p>",
+        unsafe_allow_html=True,
+    )
+  else:
+    st.markdown(
+        "<p style='color: #dc2626; font-weight: bold;'>🔒 Status: Free"
+        " (Locked)</p>",
+        unsafe_allow_html=True,
+    )
+  st.write("---")
+  if st.button("🚪 Sign Out", use_container_width=True):
+    supabase.auth.sign_out()
+    st.session_state.user = None
+    st.rerun()
 
-st.markdown("<h2>🚗 AutoCost — Car Expenses & Documents Diary</h2>", unsafe_allow_html=True)
-st.markdown("<p style='color: #475569; font-size: 15px;'>Smart cloud financial vehicle diary. Track your fuel, repairs, and documents securely.</p>", unsafe_allow_html=True)
+st.markdown(
+    "<h2>🚗 AutoCost — Car Expenses & Documents Diary</h2>",
+    unsafe_allow_html=True,
+)
+st.markdown(
+    "<p style='color: #475569; font-size: 15px;'>Smart cloud financial vehicle"
+    " diary. Track your fuel, repairs, and documents securely.</p>",
+    unsafe_allow_html=True,
+)
 st.write("---")
 
-tab1, tab2, tab3,tab4 = st.tabs(["💰 Add Expense", "🔍 Filter, Search & Analytics", "📜 Document Expiry Alerts","💎 Pro Subscription"])
+tab1, tab2, tab3, tab4 = st.tabs([
+    "💰 Add Expense",
+    "🔍 Filter, Search & Analytics",
+    "📜 Document Expiry Alerts",
+    "💎 Pro Subscription",
+])
 
 # --- TAB 1: XƏRC DAXİLMƏ ---
 with tab1:
@@ -149,9 +138,8 @@ with tab1:
 
   if not st.session_state.is_pro:
     st.warning(
-        "🔒 Pro Subscription Required: You need an active Pro subscription"
-        " to log and manage expenses. Please check the Pro Subscription"
-        " tab to activate your account."
+        "🔒 Pro Subscription Required: Please switch to the **💎 Pro"
+        " Subscription** tab above to unlock expense management."
     )
   else:
     col1, col2 = st.columns(2)
@@ -239,7 +227,6 @@ with tab1:
             key="exp_km",
         )
       st.markdown("</div>", unsafe_allow_html=True)
-
     st.write(" ")
     add_expense_btn = st.button(
         "Add Expense to Cloud Log ✨", use_container_width=True
@@ -274,13 +261,13 @@ with tab1:
 # --- TAB 2: FILTER, SEARCH & ANALYTICS ---
 with tab2:
   st.markdown("### 🔍 Filter, Search & Advanced Analytics Horizon")
-if not st.session_state.is_pro:
+
+  if not st.session_state.is_pro:
     st.warning(
-        "🔒 Pro Subscription Required: Analytics and advanced filters are"
-        " locked. Please check the Pro Subscription tab to unlock full"
-        " access."
+        "🔒 Pro Subscription Required: Please switch to the **💎 Pro"
+        " Subscription** tab above to unlock analytics and filters."
     )
-else:
+  else:
     try:
       res = (
           supabase.table("expenses").select("*").eq("user_id", user_id).execute()
@@ -387,7 +374,6 @@ else:
               "Km Driven",
               "Cost/100km ($)",
           ]])
-
           df_export = filtered_df[[
               "Vehicle Model",
               "Expense Category",
@@ -397,6 +383,7 @@ else:
               "Km Driven",
               "Cost/100km ($)",
           ]].copy()
+
           st.download_button(
               label="📥 Download Filtered Expenses as CSV",
               data=df_export.to_csv(index=False).encode("utf-8-sig"),
@@ -474,9 +461,8 @@ with tab3:
 
   if not st.session_state.is_pro:
     st.warning(
-        "🔒 Pro Subscription Required: Document tracking and email alerts"
-        " are locked. Please check the Pro Subscription tab to activate"
-        " access."
+        "🔒 Pro Subscription Required: Please switch to the **💎 Pro"
+        " Subscription** tab above to unlock document expiry alerts."
     )
   else:
     with st.form("document_form", clear_on_submit=True):
@@ -510,27 +496,27 @@ with tab3:
                 " alert?"
             ),
         )
-
-        add_doc_button = st.form_submit_button(
+      add_doc_button = st.form_submit_button(
             "Add Document Alert 🔔", use_container_width=True
         )
+
     if add_doc_button:
-        if doc_car_model.strip() == "":
-            st.error("⚠️ Please enter the vehicle model for the document!")
-        else:
-            try:
-                supabase.table("vehicle_documents").insert({
+      if doc_car_model.strip() == "":
+        st.error("⚠️ Please enter the vehicle model for the document!")
+      else:
+        try:
+          supabase.table("vehicle_documents").insert({
               "user_id": user_id,
               "vehicle_model": doc_car_model.strip(),
               "doc_name": doc_name,
               "expiry_date": str(doc_expiry_date),
               "alert_days": alert_days,
-                }).execute()
-                st.session_state.pop("last_sent_docs", None)
-                st.success("✅ Document alert successfully added to cloud database!")
-                st.rerun()
-            except Exception as e:
-                st.error(f"❌ Error saving document: {e}")
+          }).execute()
+          st.session_state.pop("last_sent_docs", None)
+          st.success("✅ Document alert successfully added to cloud database!")
+          st.rerun()
+        except Exception as e:
+          st.error(f"❌ Error saving document: {e}")
 
     try:
       docs_res = (
@@ -627,20 +613,48 @@ with tab3:
           else:
             st.error(f"❌ Email error: {err_msg}")
     else:
-      st.info("💡 No documents registered yet.")
-
-# TAB 4: PRO SUBSCRIPTION
+      st.info("💡 No documents registered yet.")        
+# --- TAB 4: PRO SUBSCRIPTION & ACCESS MANAGEMENT ---
 with tab4:
-    st.markdown("### 💎 Pro Subscription")
-    st.write("Sistem hüquqi mərhələdə olduğu üçün ödənişlər bağlıdır.")
-    
-    # Test düyməsi (bunu kodunun ən sonuna əlavə edə bilərsən)
+  st.markdown("### 💎 AutoCost Pro Subscription & Access")
+  st.write(
+      "AutoCost is a premium cloud financial vehicle diary. Payment integration"
+      " is currently on hold pending legal consultation. You can test and"
+      " evaluate the application using the simulation controls below."
+  )
+
+  col1, col2, col3 = st.columns([1, 2, 1])
+
+  with col2:
+    st.markdown(
+        """
+        <div style="background-color: #ffffff; padding: 25px; border-radius: 12px; 
+                    border: 2px solid #2563eb; box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-align: center;">
+            <h3 style="color: #1e3a8a; margin-bottom: 10px;">AutoCost Pro</h3>
+            <p style="color: #64748b; font-size: 14px;">Complete Vehicle Management Suite</p>
+            <h2 style="color: #2563eb; margin: 15px 0;">$9 <span style="font-size: 14px; color: #64748b;">/ month</span></h2>
+            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 15px 0;">
+            <ul style="text-align: left; color: #334155; font-size: 14px; list-style-type: none; padding: 0; line-height: 2;">
+                <li>✅ Unlimited Cloud Expense Logs</li>
+                <li>✅ Advanced Visual Analytics & Charts</li>
+                <li>✅ Automated Email Expiry Alerts (Resend)</li>
+                <li>✅ CSV Data Export</li>
+                <li>✅ Priority Support</li>
+            </ul>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
     if not st.session_state.is_pro:
-        if st.button("🔓 Pro Statusunu Aktiv Et (Test)"):
-            st.session_state.is_pro = True
-            st.rerun()
+      if st.button("🔓 Simulate Pro Activation (Test)", use_container_width=True):
+        st.session_state.is_pro = True
+        st.success("🎉 Pro access activated for testing!")
+        st.rerun()
     else:
-        st.success("✅ Hazırda Pro istifadəçisisən!")
-        if st.button("🔒 Pro Statusunu Bağla (Test)"):
-            st.session_state.is_pro = False
-            st.rerun()
+      if st.button("🔒 Lock Pro Access (Test)", use_container_width=True):
+        st.session_state.is_pro = False
+        st.warning("🔒 Pro access locked.")
+        st.rerun()
