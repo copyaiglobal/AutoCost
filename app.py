@@ -641,7 +641,7 @@ with tab4:
                     border: 2px solid #2563eb; box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-align: center;">
             <h3 style="color: #1e3a8a; margin-bottom: 10px;">AutoCost Pro</h3>
             <p style="color: #64748b; font-size: 14px;">Complete Vehicle Management Suite</p>
-            <h2 style="color: #2563eb; margin: 15px 0;">$9 <span style="font-size: 14px; color: #64748b;">/ month</span></h2>
+            <h2 style="color: #2563eb; margin: 15px 0;">$2.99 <span style="font-size: 14px; color: #64748b;">/ month</span></h2>
             <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 15px 0;">
             <ul style="text-align: left; color: #334155; font-size: 14px; list-style-type: none; padding: 0; line-height: 2;">
                 <li>✅ Unlimited Cloud Expense Logs</li>
