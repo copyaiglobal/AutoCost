@@ -139,7 +139,7 @@ st.markdown("<h2>🚗 AutoCost — Car Expenses & Documents Diary</h2>", unsafe_
 st.markdown("<p style='color: #475569; font-size: 15px;'>Smart cloud financial vehicle diary. Track your fuel, repairs, and documents securely.</p>", unsafe_allow_html=True)
 st.write("---")
 
-tab1, tab2, tab3 = st.tabs(["💰 Add Expense", "🔍 Filter, Search & Analytics", "📜 Document Expiry Alerts"])
+tab1, tab2, tab3,tab4 = st.tabs(["💰 Add Expense", "🔍 Filter, Search & Analytics", "📜 Document Expiry Alerts","💎 Pro Subscription"])
 
 # --- TAB 1: XƏRC DAXİLMƏ ---
 with tab1:
@@ -440,3 +440,42 @@ with tab3:
                     st.error(f"❌ Email error: {err_msg}")
     else:
         st.info("💡 No documents registered yet.")
+# --- TAB 4: PRO SUBSCRIPTION (LEMON SQUEEZY) ---
+with tab4:
+  st.markdown("### 💎 AutoCost Pro Subscription")
+  st.write(
+      "Upgrade to Pro to unlock unlimited cloud expense tracking, priority"
+      " email alerts, and advanced financial analytics."
+  )
+
+  # Lemon Squeezy məhsul ödəniş linkini buraya daxil edəcəksən:
+  checkout_url = (
+      "https://yourstore.lemonsqueezy.com/checkout/buy/your-product-id"
+  )
+
+  col1, col2 = st.columns(2)
+
+  with col1:
+    st.markdown("#### Pulsuz Plan")
+    st.write("- Əsas xərclərin qeydiyyatı")
+    st.write("- Standart sənəd xəbərdarlıqları")
+    st.button("Mövcud Plan", disabled=True, key="free_plan_btn")
+
+  with col2:
+    st.markdown("#### Pro Plan 🚀")
+    st.write("- Bütün imkanlar açıq")
+    st.write("- Prioritet e-poçt bildirişləri")
+    st.write("- Qiymət: $9 / ay")
+
+    st.markdown(
+        f"""
+        <a href="{checkout_url}" target="_blank" style="text-decoration: none;">
+            <div style="background-color: #2563eb; color: white; padding: 14px 20px; 
+                        border-radius: 10px; text-align: center; font-weight: bold; font-size: 16px;
+                        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-top: 15px;">
+                Pro Planı Al ($9/ay) 🚀
+            </div>
+        </a>
+        """,
+        unsafe_allow_html=True,
+    )
