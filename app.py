@@ -86,52 +86,61 @@ def send_alert_email(user_email, doc_list_html):
     except Exception as e:
         return False, str(e)
 
-# --- 🔐 SESSION STATE (PRO STATUS) ---
-if "is_pro" not in st.session_state:
-  st.session_state.is_pro = False
+# --- 🔐 SESSION STATE (İSTİFADƏÇİ GİRİŞİ) ---
+if "user" not in st.session_state:
+    st.session_state.user = None
+
+if st.session_state.user is None:
+    st.markdown("<h2 style='text-align: center; color: #1e3a8a;'>🚗 AutoCost Cloud SaaS</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #475569;'>Please sign in or create an account to manage your secure vehicle diary.</p>", unsafe_allow_html=True)
+    
+    auth_tab1, auth_tab2 = st.tabs(["🔑 Sign In", "📝 Register"])
+    
+    with auth_tab1:
+        st.markdown("### Sign In to Your Account")
+        login_email = st.text_input("Email Address", placeholder="name@example.com", key="login_email")
+        login_password = st.text_input("Password", type="password", key="login_pass")
+        if st.button("Sign In ✨", key="login_btn"):
+            try:
+                res = supabase.auth.sign_in_with_password({"email": login_email, "password": login_password})
+                st.session_state.user = res.user
+
+                st.success("🎉Successfully signed in!")
+                st.rerun()
+            except Exception as e:
+                st.error(f"❌ Login failed: {e}")
+                
+    with auth_tab2:
+        st.markdown("### Create New Account")
+        reg_email = st.text_input("Email Address", placeholder="name@example.com", key="reg_email")
+        reg_password = st.text_input("Password", type="password", key="reg_pass")
+        
+        if st.button("Register Account 🚀", key="reg_btn"):
+            try:
+                res = supabase.auth.sign_up({"email": reg_email, "password": reg_password})
+                st.success("✅ Account created successfully! You can now sign in.")
+            except Exception as e:
+                st.error(f"❌ Registration failed: {e}")
+                
+        st.stop()
 
 # --- 👑 ƏSAS TƏTBİQ ---
 user_id = st.session_state.user.id
 user_email = st.session_state.user.email
 
 with st.sidebar:
-  st.markdown(f"👤 Logged in as:\n{user_email}")
-  if st.session_state.is_pro:
-    st.markdown(
-        "<p style='color: #16a34a; font-weight: bold;'>💎 Pro Status:"
-        " Active</p>",
-        unsafe_allow_html=True,
-    )
-  else:
-    st.markdown(
-        "<p style='color: #dc2626; font-weight: bold;'>🔒 Status: Free"
-        " (Locked)</p>",
-        unsafe_allow_html=True,
-    )
-  st.write("---")
-  if st.button("🚪 Sign Out", use_container_width=True):
-    supabase.auth.sign_out()
-    st.session_state.user = None
-    st.rerun()
+    st.markdown(f"👤 Logged in as:\n{user_email}")
+    st.write("---")
+    if st.button("🚪 Sign Out", use_container_width=True):
+        supabase.auth.sign_out()
+        st.session_state.user = None
+        st.rerun()
 
-st.markdown(
-    "<h2>🚗 AutoCost — Car Expenses & Documents Diary</h2>",
-    unsafe_allow_html=True,
-)
-st.markdown(
-    "<p style='color: #475569; font-size: 15px;'>Smart cloud financial vehicle"
-    " diary. Track your fuel, repairs, and documents securely.</p>",
-    unsafe_allow_html=True,
-)
+st.markdown("<h2>🚗 AutoCost — Car Expenses & Documents Diary</h2>", unsafe_allow_html=True)
+st.markdown("<p style='color: #475569; font-size: 15px;'>Smart cloud financial vehicle diary. Track your fuel, repairs, and documents securely.</p>", unsafe_allow_html=True)
 st.write("---")
 
-tab1, tab2, tab3, tab4 = st.tabs([
-    "💰 Add Expense",
-    "🔍 Filter, Search & Analytics",
-    "📜 Document Expiry Alerts",
-    "💎 Pro Subscription",
-])
-
+tab1, tab2, tab3,tab4 = st.tabs(["💰 Add Expense", "🔍 Filter, Search & Analytics", "📜 Document Expiry Alerts","💎 Pro Subscription"])
 # --- TAB 1: XƏRC DAXİLMƏ ---
 with tab1:
   st.markdown("### 💰 Log New Vehicle Expense")
