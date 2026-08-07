@@ -442,38 +442,50 @@ with tab3:
         st.info("💡 No documents registered yet.")
 # --- TAB 4: PRO SUBSCRIPTION (LEMON SQUEEZY) ---
 with tab4:
-  st.markdown("### 💎 AutoCost Pro Subscription")
+  st.markdown("### 💎 AutoCost Pro Access")
   st.write(
-      "Upgrade to Pro to unlock unlimited cloud expense tracking, priority"
-      " email alerts, and advanced financial analytics."
+      "AutoCost is a premium cloud financial vehicle diary. Get full access"
+      " to unlimited expense tracking, advanced analytics, and automated"
+      " document expiry alerts."
   )
 
-  # Lemon Squeezy məhsul ödəniş linkini buraya daxil edəcəksən:
   checkout_url = (
       "https://yourstore.lemonsqueezy.com/checkout/buy/your-product-id"
   )
 
-  col1, col2 = st.columns(2)
-
-  with col1:
-    st.markdown("#### Pulsuz Plan")
-    st.write("- Əsas xərclərin qeydiyyatı")
-    st.write("- Standart sənəd xəbərdarlıqları")
-    st.button("Mövcud Plan", disabled=True, key="free_plan_btn")
+  # Mərkəzləşdirilmiş tək və güclü Pro Plan kartı
+  col1, col2, col3 = st.columns([1, 2, 1])
 
   with col2:
-    st.markdown("#### Pro Plan 🚀")
-    st.write("- Bütün imkanlar açıq")
-    st.write("- Prioritet e-poçt bildirişləri")
-    st.write("- Qiymət: $9 / ay")
+    st.markdown(
+        """
+        <div style="background-color: #ffffff; padding: 25px; border-radius: 12px; 
+                    border: 2px solid #2563eb; box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-align: center;">
+            <h3 style="color: #1e3a8a; margin-bottom: 10px;">AutoCost Pro</h3>
+            <p style="color: #64748b; font-size: 14px;">Complete Vehicle Management Suite</p>
+            <h2 style="color: #2563eb; margin: 15px 0;">$9 <span style="font-size: 14px; color: #64748b;">/ month</span></h2>
+            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 15px 0;">
+            <ul style="text-align: left; color: #334155; font-size: 14px; list-style-type: none; padding: 0; line-height: 2;">
+                <li>✅ Unlimited Cloud Expense Logs</li>
+                <li>✅ Advanced Visual Analytics & Charts</li>
+                <li>✅ Automated Email Expiry Alerts (Resend)</li>
+                <li>✅ CSV Data Export</li>
+                <li>✅ Priority Support</li>
+            </ul>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown("<br>", unsafe_allow_html=True)
 
     st.markdown(
         f"""
         <a href="{checkout_url}" target="_blank" style="text-decoration: none;">
             <div style="background-color: #2563eb; color: white; padding: 14px 20px; 
                         border-radius: 10px; text-align: center; font-weight: bold; font-size: 16px;
-                        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-top: 15px;">
-                Pro Planı Al ($9/ay) 🚀
+                        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                Get Pro Access ($9/mo) 🚀
             </div>
         </a>
         """,
