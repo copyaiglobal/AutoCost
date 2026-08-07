@@ -93,7 +93,9 @@ if "user" not in st.session_state:
 if st.session_state.user is None:
     st.markdown("<h2 style='text-align: center; color: #1e3a8a;'>🚗 AutoCost Cloud SaaS</h2>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; color: #475569;'>Please sign in or create an account to manage your secure vehicle diary.</p>", unsafe_allow_html=True)
-    
+# Əgər yoxdursa, bunu ən yuxarıya, session_state olan hissəyə əlavə et:
+if "is_pro" not in st.session_state:
+    st.session_state.is_pro = False
     auth_tab1, auth_tab2 = st.tabs(["🔑 Sign In", "📝 Register"])
     
     with auth_tab1:
@@ -104,7 +106,7 @@ if st.session_state.user is None:
             try:
                 res = supabase.auth.sign_in_with_password({"email": login_email, "password": login_password})
                 st.session_state.user = res.user
-                st.success("🎉 Successfully signed in!")
+                st.success("🎉Successfully signed in!")
                 st.rerun()
             except Exception as e:
                 st.error(f"❌ Login failed: {e}")
@@ -143,227 +145,387 @@ tab1, tab2, tab3,tab4 = st.tabs(["💰 Add Expense", "🔍 Filter, Search & Anal
 
 # --- TAB 1: XƏRC DAXİLMƏ ---
 with tab1:
-    st.markdown("### 💰 Log New Vehicle Expense")
-    
+  st.markdown("### 💰 Log New Vehicle Expense")
+
+  if not st.session_state.is_pro:
+    st.warning(
+        "🔒 Pro Subscription Required: You need an active Pro subscription"
+        " to log and manage expenses. Please check the Pro Subscription"
+        " tab to activate your account."
+    )
+  else:
     col1, col2 = st.columns(2)
     with col1:
-        car_model = st.text_input("Vehicle Model / Brand:", placeholder="e.g., Toyota Prius", key="car_model_input")
-        expense_type = st.selectbox("Expense Category:", ["Fuel ⛽", "Repair 🔧", "Maintenance 🛠️", "Insurance 📄", "Tax 💰", "Other 📌"], key="expense_type_input")
+      car_model = st.text_input(
+          "Vehicle Model / Brand:",
+          placeholder="e.g., Toyota Prius",
+          key="car_model_input",
+      )
+      expense_type = st.selectbox(
+          "Expense Category:",
+          [
+              "Fuel ⛽",
+              "Repair 🔧",
+              "Maintenance 🛠️",
+              "Insurance 📄",
+              "Tax 💰",
+              "Other 📌",
+          ],
+          key="expense_type_input",
+      )
 
     with col2:
-        expense_amount = st.number_input("Expense Amount ($):", min_value=0.0, step=1.0, key="expense_amount_input")
-        
-        c_col1, c_col2 = st.columns(2)
-        with c_col1:
-            currency = st.selectbox("Currency", ["USD", "EUR", "AZN"], key="expense_currency")
-        with c_col2:
-            if currency == "USD":
-                default_rate = 1.0
-            elif currency == "EUR":
-                default_rate = 1.08
-            else:
-                default_rate = 0.59
-            
-            exchange_rate = st.number_input("Exchange Rate to USD", value=default_rate, format="%.2f", key="exchange_rate_input")
+      expense_amount = st.number_input(
+          "Expense Amount ($):",
+          min_value=0.0,
+          step=1.0,
+          key="expense_amount_input",
+      )
 
-    expense_date = st.date_input("Transaction Date:", datetime.date.today(), key="expense_date_input")
+      c_col1, c_col2 = st.columns(2)
+      with c_col1:
+        currency = st.selectbox(
+            "Currency", ["USD", "EUR", "AZN"], key="expense_currency"
+        )
+      with c_col2:
+        if currency == "USD":
+          default_rate = 1.0
+        elif currency == "EUR":
+          default_rate = 1.08
+        else:
+          default_rate = 0.59
+
+        exchange_rate = st.number_input(
+            "Exchange Rate to USD",
+            value=default_rate,
+            format="%.2f",
+            key="exchange_rate_input",
+        )
+
+    expense_date = st.date_input(
+        "Transaction Date:", datetime.date.today(), key="expense_date_input"
+    )
     final_amount = expense_amount * exchange_rate
 
     fuel_liters = 0.0
     km_driven = 0.0
 
     if "Fuel" in expense_type:
-        st.markdown("<div style='background-color: #eff6ff; padding: 15px; border-radius: 10px; border: 1px solid #bfdbfe; margin-top: 10px;'>", unsafe_allow_html=True)
-        st.markdown("<h4 style='color: #1e40af !important; margin-bottom: 10px;'>⛽ Fuel Consumption Calculator Matrix</h4>", unsafe_allow_html=True)
-        f_col1, f_col2 = st.columns(2)
-        with f_col1:
-            fuel_liters = st.number_input("Fuel Liters (L):", min_value=0.0, value=0.0, step=0.5, key="exp_liters")
-        with f_col2:
-            km_driven = st.number_input("Kilometers Driven (km):", min_value=0.0, value=0.0, step=1.0, key="exp_km")
-        st.markdown("</div>", unsafe_allow_html=True)
+      st.markdown(
+          "<div style='background-color: #eff6ff; padding: 15px; border-radius:"
+          " 10px; border: 1px solid #bfdbfe; margin-top: 10px;'>",
+          unsafe_allow_html=True,
+      )
+      st.markdown(
+          "<h4 style='color: #1e40af !important; margin-bottom: 10px;'>⛽ Fuel"
+          " Consumption Calculator Matrix</h4>",
+          unsafe_allow_html=True,
+      )
+      f_col1, f_col2 = st.columns(2)
+      with f_col1:
+        fuel_liters = st.number_input(
+            "Fuel Liters (L):",
+            min_value=0.0,
+            value=0.0,
+            step=0.5,
+            key="exp_liters",
+        )
+      with f_col2:
+        km_driven = st.number_input(
+            "Kilometers Driven (km):",
+            min_value=0.0,
+            value=0.0,
+            step=1.0,
+            key="exp_km",
+        )
+      st.markdown("</div>", unsafe_allow_html=True)
 
     st.write(" ")
-    add_expense_btn = st.button("Add Expense to Cloud Log ✨", use_container_width=True)
+    add_expense_btn = st.button(
+        "Add Expense to Cloud Log ✨", use_container_width=True
+    )
     if add_expense_btn:
-        if car_model.strip() == "" or expense_amount <= 0:
-            st.error("⚠️ Please enter the vehicle model and ensure the amount is greater than 0!")
-        else:
-            cost_per_100km = 0.0
-            if "Fuel" in expense_type and km_driven > 0:
-                cost_per_100km = (expense_amount / km_driven) * 100
-            
-            try:
-                supabase.table("expenses").insert({
-                    "user_id": user_id,
-                    "vehicle_model": car_model.strip(),
-                    "expense_type": expense_type,
-                    "amount": round(final_amount, 2),
-                    "date": str(expense_date),
-                    "fuel_liters": fuel_liters,
-                    "km_driven": km_driven,
-                    "cost_per_100km": round(cost_per_100km, 2)
-                }).execute()
-                st.session_state["filter_end"] = expense_date
-                st.success("✅ Expense successfully logged to your cloud database!")
-            except Exception as e:
-                st.error(f"❌ Error saving expense: {e}")
+      if car_model.strip() == "" or expense_amount <= 0:
+        st.error(
+            "⚠️ Please enter the vehicle model and ensure the amount is greater"
+            " than 0!"
+        )
+      else:
+        cost_per_100km = 0.0
+        if "Fuel" in expense_type and km_driven > 0:
+          cost_per_100km = (expense_amount / km_driven) * 100
+
+        try:
+          supabase.table("expenses").insert({
+              "user_id": user_id,
+              "vehicle_model": car_model.strip(),
+              "expense_type": expense_type,
+              "amount": round(final_amount, 2),
+              "date": str(expense_date),
+              "fuel_liters": fuel_liters,
+              "km_driven": km_driven,
+              "cost_per_100km": round(cost_per_100km, 2),
+          }).execute()
+          st.session_state["filter_end"] = expense_date
+          st.success("✅ Expense successfully logged to your cloud database!")
+        except Exception as e:
+          st.error(f"❌ Error saving expense: {e}")
 
 # --- TAB 2: FILTER, SEARCH & ANALYTICS ---
 with tab2:
-    st.markdown("### 🔍 Filter, Search & Advanced Analytics Horizon")
-
+  st.markdown("### 🔍 Filter, Search & Advanced Analytics Horizon")
+if not st.session_state.is_pro:
+    st.warning(
+        "🔒 Pro Subscription Required: Analytics and advanced filters are"
+        " locked. Please check the Pro Subscription tab to unlock full"
+        " access."
+    )
+else:
     try:
-        res = supabase.table("expenses").select("*").eq("user_id", user_id).execute()
-        data = res.data
-        
-        if data:
-            df = pd.DataFrame(data)
-            
-            df = df.rename(columns={
+      res = (
+          supabase.table("expenses").select("*").eq("user_id", user_id).execute()
+      )
+      data = res.data
+
+      if data:
+        df = pd.DataFrame(data)
+
+        df = df.rename(
+            columns={
                 "vehicle_model": "Vehicle Model",
                 "expense_type": "Expense Category",
                 "amount": "Amount ($)",
                 "date": "Date",
                 "fuel_liters": "Liters (L)",
                 "km_driven": "Km Driven",
-                "cost_per_100km": "Cost/100km ($)"
-            })
-            
-            f_col1, f_col2 = st.columns(2)
-            with f_col1:
-                categories = ["All Categories"] + list(df["Expense Category"].unique())
-                selected_category = st.selectbox("Filter by Category", categories, key="filter_cat")
-            with f_col2:
-                model_query = st.text_input("Search by Vehicle Model:", placeholder="Type model name...", key="filter_model")
-            
-            df["Date"] = pd.to_datetime(df["Date"])
-            min_date = df["Date"].min().date()
-            max_date = df["Date"].max().date()
-            
-            if "filter_end" not in st.session_state:
-                st.session_state["filter_end"] = max_date
-            
-            d_col1, d_col2 = st.columns(2)
-            with d_col1:
-                start_date = st.date_input("Start Date Horizon", min_date, key="filter_start")
-            with d_col2:
-                end_date = st.date_input("End Date Horizon", key="filter_end")
-                
-            filtered_df = df.copy()
-            if selected_category != "All Categories":
-                filtered_df = filtered_df[filtered_df["Expense Category"] == selected_category]
-            if model_query.strip():
-                filtered_df = filtered_df[filtered_df["Vehicle Model"].str.contains(model_query, case=False, na=False)]
-            
-            filtered_df = filtered_df[(filtered_df["Date"].dt.date >= start_date) & (filtered_df["Date"].dt.date <= end_date)]
-            
-            if not filtered_df.empty:
-                total_cost = filtered_df["Amount ($)"].sum()
-                total_km = filtered_df["Km Driven"].sum()
-                total_liters = filtered_df["Liters (L)"].sum()
-                
-                m1, m2, m3 = st.columns(3)
-                m1.metric("💰 Total Expenditure", f"${total_cost:,.2f}")
-                m2.metric("🛣️ Total Distance", f"{total_km:,.1f} km")
-                m3.metric("⛽ Total Fuel", f"{total_liters:,.1f} L")
-                
-                st.write("---")
-                st.markdown("#### 📋 Current Vehicle Expenses Log Matrix (Cloud Database)")
-                
-                df_display = filtered_df.copy()
-                df_display["Date"] = df_display["Date"].dt.strftime("%Y-%m-%d")
-                df_display["Amount ($)"] = df_display["Amount ($)"].map(lambda x: f"{x:,.2f}")
-                df_display["Cost/100km ($)"] = df_display["Cost/100km ($)"].map(lambda x: f"{x:,.2f}")
-                df_display["Liters (L)"] = df_display["Liters (L)"].map(lambda x: f"{x:,.2f}")
-                df_display["Km Driven"] = df_display["Km Driven"].map(lambda x: f"{x:,.2f}")
-                
-                st.table(df_display[['Vehicle Model', 'Expense Category', 'Amount ($)', 'Date', 'Liters (L)', 'Km Driven', 'Cost/100km ($)']])
-                
-                df_export = filtered_df[['Vehicle Model', 'Expense Category', 'Amount ($)', 'Date', 'Liters (L)', 'Km Driven', 'Cost/100km ($)']].copy()
-                
-                st.download_button(
-                    label="📥 Download Filtered Expenses as CSV",
-                    data=df_export.to_csv(index=False).encode("utf-8-sig"),
-                    file_name="autocost_cloud_report.csv",
-                    mime="text/csv",
-                    use_container_width=True
-                )
+                "cost_per_100km": "Cost/100km ($)",
+            }
+        )
 
-                st.write("---")
-                st.markdown("#### 📊 Advanced Expense Analytics Horizon")
-                g_col1, g_col2 = st.columns(2)
-                with g_col1:
-                    st.markdown("<p style='font-weight: bold; color: #1e3a8a;'>By Category ($)</p>", unsafe_allow_html=True)
-                    st.bar_chart(filtered_df.groupby("Expense Category")["Amount ($)"].sum())
-                with g_col2:
-                    st.markdown("<p style='font-weight: bold; color: #1e3a8a;'>By Vehicle Model ($)</p>", unsafe_allow_html=True)
-                    st.bar_chart(filtered_df.groupby("Vehicle Model")["Amount ($)"].sum())
+        f_col1, f_col2 = st.columns(2)
+        with f_col1:
+          categories = ["All Categories"] + list(
+              df["Expense Category"].unique()
+          )
+          selected_category = st.selectbox(
+              "Filter by Category", categories, key="filter_cat"
+          )
+        with f_col2:
+          model_query = st.text_input(
+              "Search by Vehicle Model:",
+              placeholder="Type model name...",
+              key="filter_model",
+          )
 
-                st.markdown("<p style='font-weight: bold; color: #1e3a8a; margin-top: 20px;'>Spending Timeline Trend</p>", unsafe_allow_html=True)
-                
-                timeline_df = filtered_df.groupby("Date")["Amount ($)"].sum().reset_index()
-                timeline_df["Date"] = pd.to_datetime(timeline_df["Date"])
-                timeline_df = timeline_df.sort_values("Date")
-                timeline_df["Date_Str"] = timeline_df["Date"].dt.strftime("%b %d, %Y")
-                
-                fig = px.line(
-                    timeline_df, 
-                    x="Date_Str", 
-                    y="Amount ($)", 
-                    markers=True,
-                    labels={"Amount ($)": "Amount ($)", "Date_Str": "Transaction Date"}
-                )
-                fig.update_layout(
-                    plot_bgcolor="rgba(0,0,0,0)",
-                    paper_bgcolor="rgba(0,0,0,0)",
-                    font=dict(color="#1e3a8a", size=12),
-                    xaxis=dict(showgrid=True, gridcolor="#e2e8f0"),
-                    yaxis=dict(showgrid=True, gridcolor="#e2e8f0")
-                )
-                st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.warning("⚠️ No records found matching your filter criteria.")
+        df["Date"] = pd.to_datetime(df["Date"])
+        min_date = df["Date"].min().date()
+        max_date = df["Date"].max().date()
+
+        if "filter_end" not in st.session_state:
+          st.session_state["filter_end"] = max_date
+
+        d_col1, d_col2 = st.columns(2)
+        with d_col1:
+          start_date = st.date_input(
+              "Start Date Horizon", min_date, key="filter_start"
+          )
+        with d_col2:
+          end_date = st.date_input("End Date Horizon", key="filter_end")
+
+        filtered_df = df.copy()
+        if selected_category != "All Categories":
+          filtered_df = filtered_df[
+              filtered_df["Expense Category"] == selected_category
+          ]
+        if model_query.strip():
+          filtered_df = filtered_df[
+              filtered_df["Vehicle Model"]
+              .str.contains(model_query, case=False, na=False)
+          ]
+
+        filtered_df = filtered_df[
+            (filtered_df["Date"].dt.date >= start_date)
+            & (filtered_df["Date"].dt.date <= end_date)
+        ]
+
+        if not filtered_df.empty:
+          total_cost = filtered_df["Amount ($)"].sum()
+          total_km = filtered_df["Km Driven"].sum()
+          total_liters = filtered_df["Liters (L)"].sum()
+
+          m1, m2, m3 = st.columns(3)
+          m1.metric("💰 Total Expenditure", f"${total_cost:,.2f}")
+          m2.metric("🛣️ Total Distance", f"{total_km:,.1f} km")
+          m3.metric("⛽ Total Fuel", f"{total_liters:,.1f} L")
+
+          st.write("---")
+          st.markdown(
+              "#### 📋 Current Vehicle Expenses Log Matrix (Cloud Database)"
+          )
+
+          df_display = filtered_df.copy()
+          df_display["Date"] = df_display["Date"].dt.strftime("%Y-%m-%d")
+          df_display["Amount ($)"] = df_display["Amount ($)"].map(
+              lambda x: f"{x:,.2f}"
+          )
+          df_display["Cost/100km ($)"] = df_display["Cost/100km ($)"].map(
+              lambda x: f"{x:,.2f}"
+          )
+          df_display["Liters (L)"] = df_display["Liters (L)"].map(
+              lambda x: f"{x:,.2f}"
+          )
+          df_display["Km Driven"] = df_display["Km Driven"].map(
+              lambda x: f"{x:,.2f}"
+          )
+
+          st.table(df_display[[
+              "Vehicle Model",
+              "Expense Category",
+              "Amount ($)",
+              "Date",
+              "Liters (L)",
+              "Km Driven",
+              "Cost/100km ($)",
+          ]])
+
+          df_export = filtered_df[[
+              "Vehicle Model",
+              "Expense Category",
+              "Amount ($)",
+              "Date",
+              "Liters (L)",
+              "Km Driven",
+              "Cost/100km ($)",
+          ]].copy()
+          st.download_button(
+              label="📥 Download Filtered Expenses as CSV",
+              data=df_export.to_csv(index=False).encode("utf-8-sig"),
+              file_name="autocost_cloud_report.csv",
+              mime="text/csv",
+              use_container_width=True,
+          )
+
+          st.write("---")
+          st.markdown("#### 📊 Advanced Expense Analytics Horizon")
+          g_col1, g_col2 = st.columns(2)
+          with g_col1:
+            st.markdown(
+                "<p style='font-weight: bold; color: #1e3a8a;'>By Category"
+                " ($)</p>",
+                unsafe_allow_html=True,
+            )
+            st.bar_chart(
+                filtered_df.groupby("Expense Category")["Amount ($)"].sum()
+            )
+          with g_col2:
+            st.markdown(
+                "<p style='font-weight: bold; color: #1e3a8a;'>By Vehicle Model"
+                " ($)</p>",
+                unsafe_allow_html=True,
+            )
+            st.bar_chart(
+                filtered_df.groupby("Vehicle Model")["Amount ($)"].sum()
+            )
+
+          st.markdown(
+              "<p style='font-weight: bold; color: #1e3a8a; margin-top:"
+              " 20px;'>Spending Timeline Trend</p>",
+              unsafe_allow_html=True,
+          )
+
+          timeline_df = (
+              filtered_df.groupby("Date")["Amount ($)"].sum().reset_index()
+          )
+          timeline_df["Date"] = pd.to_datetime(timeline_df["Date"])
+          timeline_df = timeline_df.sort_values("Date")
+          timeline_df["Date_Str"] = timeline_df["Date"].dt.strftime(
+              "%b %d, %Y"
+          )
+
+          fig = px.line(
+              timeline_df,
+              x="Date_Str",
+              y="Amount ($)",
+              markers=True,
+              labels={
+                  "Amount ($)": "Amount ($)",
+                  "Date_Str": "Transaction Date",
+              },
+          )
+          fig.update_layout(
+              plot_bgcolor="rgba(0,0,0,0)",
+              paper_bgcolor="rgba(0,0,0,0)",
+              font=dict(color="#1e3a8a", size=12),
+              xaxis=dict(showgrid=True, gridcolor="#e2e8f0"),
+              yaxis=dict(showgrid=True, gridcolor="#e2e8f0"),
+          )
+          st.plotly_chart(fig, use_container_width=True)
         else:
-            st.info("💡 No expenses registered in the cloud database yet.")
-            
+          st.warning("⚠️ No records found matching your filter criteria.")
+      else:
+        st.info("💡 No expenses registered in the cloud database yet.")
+
     except Exception as e:
-        st.error(f"Error loading data: {e}")
+      st.error(f"Error loading data: {e}")
 
 # --- TAB 3: DOCUMENT EXPIRY ALERTS ---
 with tab3:
-    st.markdown("### 📜 Document & Expiry Alerts Matrix")
-    
-    with st.form("document_form", clear_on_submit=True):
-        doc_col1, doc_col2 = st.columns(2)
-        with doc_col1:
-            doc_car_model = st.text_input("Vehicle Model for Document:", placeholder="e.g., Prius, BMW")
-            doc_name = st.selectbox("Document Type:", ["Insurance 📜", "Technical Inspection 🔍", "Road Tax 🛣️", "Other 📄"])
-        with doc_col2:
-            doc_expiry_date = st.date_input("Document Expiry Date:", datetime.date.today() + datetime.timedelta(days=30))
-            
-            alert_days = st.number_input(
-                "Alert Days Before Expiry:", 
-                min_value=1, 
-                max_value=90, 
-                value=7,
-                help="How many days in advance would you like to receive an email alert?"
-            )
-            
-            add_doc_button = st.form_submit_button("Add Document Alert 🔔", use_container_width=True)
+  st.markdown("### 📜 Document & Expiry Alerts Matrix")
 
+  if not st.session_state.is_pro:
+    st.warning(
+        "🔒 Pro Subscription Required: Document tracking and email alerts"
+        " are locked. Please check the Pro Subscription tab to activate"
+        " access."
+    )
+  else:
+    with st.form("document_form", clear_on_submit=True):
+      doc_col1, doc_col2 = st.columns(2)
+      with doc_col1:
+        doc_car_model = st.text_input(
+            "Vehicle Model for Document:", placeholder="e.g., Prius, BMW"
+        )
+        doc_name = st.selectbox(
+            "Document Type:",
+            [
+                "Insurance 📜",
+                "Technical Inspection 🔍",
+                "Road Tax 🛣️",
+                "Other 📄",
+            ],
+        )
+      with doc_col2:
+        doc_expiry_date = st.date_input(
+            "Document Expiry Date:",
+            datetime.date.today() + datetime.timedelta(days=30),
+        )
+
+        alert_days = st.number_input(
+            "Alert Days Before Expiry:",
+            min_value=1,
+            max_value=90,
+            value=7,
+            help=(
+                "How many days in advance would you like to receive an email"
+                " alert?"
+            ),
+        )
+
+        add_doc_button = st.form_submit_button(
+            "Add Document Alert 🔔", use_container_width=True
+        )
     if add_doc_button:
         if doc_car_model.strip() == "":
             st.error("⚠️ Please enter the vehicle model for the document!")
         else:
             try:
                 supabase.table("vehicle_documents").insert({
-                    "user_id": user_id,
-                    "vehicle_model": doc_car_model.strip(),
-                    "doc_name": doc_name,
-                    "expiry_date": str(doc_expiry_date),
-                    "alert_days": alert_days
+              "user_id": user_id,
+              "vehicle_model": doc_car_model.strip(),
+              "doc_name": doc_name,
+              "expiry_date": str(doc_expiry_date),
+              "alert_days": alert_days,
                 }).execute()
-                # Yeni sənəd əlavə olunduqda yaddaşı sıfırlayırıq ki, təzə siyahı üçün yenidən e-poçt getsin
                 st.session_state.pop("last_sent_docs", None)
                 st.success("✅ Document alert successfully added to cloud database!")
                 st.rerun()
@@ -371,123 +533,114 @@ with tab3:
                 st.error(f"❌ Error saving document: {e}")
 
     try:
-        docs_res = supabase.table("vehicle_documents").select("*").eq("user_id", user_id).execute()
-        docs_data = docs_res.data
+      docs_res = (
+          supabase.table("vehicle_documents")
+          .select("*")
+          .eq("user_id", user_id)
+          .execute()
+      )
+      docs_data = docs_res.data
     except Exception as e:
-        st.error(f"Supabase detallı xəta: {e}")
-        docs_data = []
-    
+      st.error(f"Supabase detallı xəta: {e}")
+      docs_data = []
+
     if docs_data:
-        docs_df = pd.DataFrame(docs_data)
-        docs_df = docs_df.rename(columns={
-            "vehicle_model": "Vehicle Model",
-            "doc_name": "Document Type",
-            "expiry_date": "Expiry Date",
-            "alert_days": "Alert Days"
-        })
-        
-        st.write("---")
-        st.markdown("#### Registered Documents & Status Horizon")
-        today = datetime.date.today()
-        
-        status_list = []
-        days_left_list = []
-        expired_count = 0
-        soon_count = 0
-        due_docs_for_email = []
-        
-        for idx, row in docs_df.iterrows():
-            exp_date = datetime.datetime.strptime(row['Expiry Date'], "%Y-%m-%d").date()
-            days_left = (exp_date - today).days
-            days_left_list.append(days_left)
-            
-            alert_threshold = row.get('Alert Days', 7)
-            if pd.isna(alert_threshold):
-                alert_threshold = 7
-            else:
-                alert_threshold = int(alert_threshold)
+      docs_df = pd.DataFrame(docs_data)
+      docs_df = docs_df.rename(
+          columns={
+              "vehicle_model": "Vehicle Model",
+              "doc_name": "Document Type",
+              "expiry_date": "Expiry Date",
+              "alert_days": "Alert Days",
+          }
+      )
 
-            if days_left < 0:
-                status_list.append("🔴 Expired")
-                expired_count += 1
-                due_docs_for_email.append(f"<li><b>{row['Vehicle Model']} - {row['Document Type']}</b> (EXPIRED by {-days_left} days)</li>")
-            elif days_left <= alert_threshold:
-                status_list.append(f"⚠️ Expiring Soon ({days_left} days left)")
-                soon_count += 1
-                due_docs_for_email.append(f"<li><b>{row['Vehicle Model']} - {row['Document Type']}</b> (Expires in {days_left} days)</li>")
-            else:
-                status_list.append(f"🟢 Valid ({days_left} days left)")
-                
-        docs_display = docs_df.copy()
-        docs_display['Status'] = status_list
-        
-        st.table(docs_display[['Vehicle Model', 'Document Type', 'Expiry Date', 'Alert Days', 'Status']])
-        if expired_count > 0:
-            st.error(f"🚨 Attention! You have {expired_count} expired document(s)!")
-        if soon_count > 0:
-            st.warning(f"⚠️ Warning! You have {soon_count} document(s) reaching their alert threshold.")
-            
-        # --- BÜTÜN SƏNƏDLƏRİ BİR MƏKTUBDA GÖNDƏRMƏ MƏNTİQİ ---
-        if due_docs_for_email:
-            current_due_signature = str(due_docs_for_email)
-            if st.session_state.get("last_sent_docs") != current_due_signature:
-                doc_list_html = "".join(due_docs_for_email)
-                success, err_msg = send_alert_email(user_email, doc_list_html)
-                if success:
-                    st.toast("📧 Automated email alert sent with all due documents!", icon="🚀")
-                    st.session_state["last_sent_docs"] = current_due_signature
-                else:
-                    st.error(f"❌ Email error: {err_msg}")
+      st.write("---")
+      st.markdown("#### Registered Documents & Status Horizon")
+      today = datetime.date.today()
+
+      status_list = []
+      days_left_list = []
+      expired_count = 0
+      soon_count = 0
+      due_docs_for_email = []
+
+      for idx, row in docs_df.iterrows():
+        exp_date = datetime.datetime.strptime(
+            row["Expiry Date"], "%Y-%m-%d"
+        ).date()
+        days_left = (exp_date - today).days
+        days_left_list.append(days_left)
+
+        alert_threshold = row.get("Alert Days", 7)
+        if pd.isna(alert_threshold):
+          alert_threshold = 7
+        else:
+          alert_threshold = int(alert_threshold)
+
+        if days_left < 0:
+          status_list.append("🔴 Expired")
+          expired_count += 1
+          due_docs_for_email.append(
+              f"<li><b>{row['Vehicle Model']} - {row['Document Type']}</b>"
+              f" (EXPIRED by {-days_left} days)</li>"
+          )
+        elif days_left <= alert_threshold:
+          status_list.append(f"⚠️ Expiring Soon ({days_left} days left)")
+          soon_count += 1
+          due_docs_for_email.append(
+              f"<li><b>{row['Vehicle Model']} - {row['Document Type']}</b>"
+              f" (Expires in {days_left} days)</li>"
+          )
+        else:
+          status_list.append(f"🟢 Valid ({days_left} days left)")
+
+      docs_display = docs_df.copy()
+      docs_display["Status"] = status_list
+
+      st.table(docs_display[[
+          "Vehicle Model",
+          "Document Type",
+          "Expiry Date",
+          "Alert Days",
+          "Status",
+      ]])
+      if expired_count > 0:
+        st.error(f"🚨 Attention! You have {expired_count} expired document(s)!")
+      if soon_count > 0:
+        st.warning(
+            f"⚠️ Warning! You have {soon_count} document(s) reaching their alert"
+            " threshold."
+        )
+
+      if due_docs_for_email:
+        current_due_signature = str(due_docs_for_email)
+        if st.session_state.get("last_sent_docs") != current_due_signature:
+          doc_list_html = "".join(due_docs_for_email)
+          success, err_msg = send_alert_email(user_email, doc_list_html)
+          if success:
+            st.toast(
+                "📧 Automated email alert sent with all due documents!",
+                icon="🚀",
+            )
+            st.session_state["last_sent_docs"] = current_due_signature
+          else:
+            st.error(f"❌ Email error: {err_msg}")
     else:
-        st.info("💡 No documents registered yet.")
-# --- TAB 4: PRO SUBSCRIPTION (LEMON SQUEEZY) ---
+      st.info("💡 No documents registered yet.")
+
+# TAB 4: PRO SUBSCRIPTION
 with tab4:
-  st.markdown("### 💎 AutoCost Pro Access")
-  st.write(
-      "AutoCost is a premium cloud financial vehicle diary. Get full access"
-      " to unlimited expense tracking, advanced analytics, and automated"
-      " document expiry alerts."
-  )
-
-  checkout_url = (
-      "https://yourstore.lemonsqueezy.com/checkout/buy/your-product-id"
-  )
-
-  # Mərkəzləşdirilmiş tək və güclü Pro Plan kartı
-  col1, col2, col3 = st.columns([1, 2, 1])
-
-  with col2:
-    st.markdown(
-        """
-        <div style="background-color: #ffffff; padding: 25px; border-radius: 12px; 
-                    border: 2px solid #2563eb; box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-align: center;">
-            <h3 style="color: #1e3a8a; margin-bottom: 10px;">AutoCost Pro</h3>
-            <p style="color: #64748b; font-size: 14px;">Complete Vehicle Management Suite</p>
-            <h2 style="color: #2563eb; margin: 15px 0;">$9 <span style="font-size: 14px; color: #64748b;">/ month</span></h2>
-            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 15px 0;">
-            <ul style="text-align: left; color: #334155; font-size: 14px; list-style-type: none; padding: 0; line-height: 2;">
-                <li>✅ Unlimited Cloud Expense Logs</li>
-                <li>✅ Advanced Visual Analytics & Charts</li>
-                <li>✅ Automated Email Expiry Alerts (Resend)</li>
-                <li>✅ CSV Data Export</li>
-                <li>✅ Priority Support</li>
-            </ul>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    st.markdown(
-        f"""
-        <a href="{checkout_url}" target="_blank" style="text-decoration: none;">
-            <div style="background-color: #2563eb; color: white; padding: 14px 20px; 
-                        border-radius: 10px; text-align: center; font-weight: bold; font-size: 16px;
-                        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
-                Get Pro Access ($9/mo) 🚀
-            </div>
-        </a>
-        """,
-        unsafe_allow_html=True,
-    )
+    st.markdown("### 💎 Pro Subscription")
+    st.write("Sistem hüquqi mərhələdə olduğu üçün ödənişlər bağlıdır.")
+    
+    # Test düyməsi (bunu kodunun ən sonuna əlavə edə bilərsən)
+    if not st.session_state.is_pro:
+        if st.button("🔓 Pro Statusunu Aktiv Et (Test)"):
+            st.session_state.is_pro = True
+            st.rerun()
+    else:
+        st.success("✅ Hazırda Pro istifadəçisisən!")
+        if st.button("🔒 Pro Statusunu Bağla (Test)"):
+            st.session_state.is_pro = False
+            st.rerun()
