@@ -1,31 +1,28 @@
-import streamlit as st
 import datetime
-from supabase import create_client
 import pandas as pd
 import plotly.express as px
 import resend
-# 🔒 Bax düz bura yapışdır:
-@st.dialog("🔒 AutoCost Pro Feature")
-def show_pro_popup():
-    st.write("This is a Pro feature. Upgrade to AutoCost Pro to continue.")
-    st.write("Unlock advanced expense management, analytics horizon, and document alerts.")
-    
-    if st.button("Upgrade Now 💎", type="primary"):
-        st.session_state.current_tab = "💎 Pro Subscription"
-        st.rerun()
+import streamlit as st
+from supabase import create_client
 
 try:
-    url = st.secrets["SUPABASE_URL"]
-    key = st.secrets["SUPABASE_KEY"]
-    supabase = create_client(url, key)
+  url = st.secrets["SUPABASE_URL"]
+  key = st.secrets["SUPABASE_KEY"]
+  supabase = create_client(url, key)
 except Exception as e:
-    st.error(f"Supabase connection failed. Please check your secrets configuration. Error: {e}")
-    st.stop()
+  st.error(
+      f"Supabase connection failed. Please check your secrets configuration."
+      f" Error: {e}"
+  )
+  st.stop()
 
 # --- 🎨 SƏHİFƏ AYARLARI VƏ DİZAYN ---
-st.set_page_config(page_title="AutoCost - Cloud SaaS", page_icon="🚗", layout="centered")
+st.set_page_config(
+    page_title="AutoCost - Cloud SaaS", page_icon="🚗", layout="centered"
+)
 
-st.markdown("""
+st.markdown(
+    """
 <style>
 html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] { 
     background-color: #f8fafc !important; 
@@ -65,102 +62,156 @@ h4 { color: #1e3a8a !important; font-weight: bold !important; margin-top: 15px !
 }
 .stButton>button:hover, div.stFormSubmitButton>button:hover { background-color: #1d4ed8 !important; }
 </style>
-""", unsafe_allow_html=True)
-
+""",
+    unsafe_allow_html=True,
+)
 # --- 📧 RESEND EMAIL GÖNDƏRMƏ FUNKSİYASI ---
 resend.api_key = st.secrets["RESEND_API_KEY"]
 
-def send_alert_email(user_email, doc_list_html):
-    try:
-        params = {
-            "from": "onboarding@resend.dev",
-            "to": [user_email],
-            "subject": "⚠️ AutoCost Alert: Documents Expiring Soon!",
-            "html": f"""
-            <div style="font-family: Arial, sans-serif; color: #0f172a; padding: 20px;">
-                <h2 style="color: #1e3a8a;">AutoCost Document Alert 🚗</h2>
-                <p>Hello,</p>
-                <p>This is an automated reminder from your vehicle diary. The following document(s) require your attention:</p>
-                <ul>
-                    {doc_list_html}
-                </ul>
-                <p>Please take action to renew them on time.</p>
-                <br>
-                <p>Best regards,<br><b>AutoCost Team 🚀</b></p>
-            </div>
-            """
-        }
-        resend.Emails.send(params)
-        return True, None
-    except Exception as e:
-        return False, str(e)
 
-# --- 🔐 SESSION STATE (İSTİFADƏÇİ GİRİŞİ) ---
-if "is_pro" not in st.session_state:
-    st.session_state.is_pro = False
+def send_alert_email(user_email, doc_list_html):
+  try:
+    params = {
+        "from": "onboarding@resend.dev",
+        "to": [user_email],
+        "subject": "⚠️ AutoCost Alert: Documents Expiring Soon!",
+        "html": f"""
+        <div style="font-family: Arial, sans-serif; color: #0f172a; padding: 20px;">
+            <h2 style="color: #1e3a8a;">AutoCost Document Alert 🚗</h2>
+            <p>Hello,</p>
+            <p>This is an automated reminder from your vehicle diary. The following document(s) require your attention:</p>
+            <ul>
+                {doc_list_html}
+            </ul>
+            <p>Please take action to renew them on time.</p>
+            <br>
+            <p>Best regards,<br><b>AutoCost Team 🚀</b></p>
+        </div>
+        """,
+    }
+    resend.Emails.send(params)
+    return True, None
+  except Exception as e:
+    return False, str(e)
+
+
+# --- 🔐 SESSION STATE (İSTİFADƏÇİ GİRİŞİ VƏ PRO STATUS) ---
 if "user" not in st.session_state:
-    st.session_state.user = None
+  st.session_state.user = None
+
+if "is_pro" not in st.session_state:
+  st.session_state.is_pro = False
+
+if "my_tabs" not in st.session_state:
+  st.session_state.my_tabs = "💰 Add Expense"
 
 if st.session_state.user is None:
-    st.markdown("<h2 style='text-align: center; color: #1e3a8a;'>🚗 AutoCost Cloud SaaS</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #475569;'>Please sign in or create an account to manage your secure vehicle diary.</p>", unsafe_allow_html=True)
-    
-    auth_tab1, auth_tab2 = st.tabs(["🔑 Sign In", "📝 Register"])
-    
-    with auth_tab1:
-        st.markdown("### Sign In to Your Account")
-        login_email = st.text_input("Email Address", placeholder="name@example.com", key="login_email")
-        login_password = st.text_input("Password", type="password", key="login_pass")
-        if st.button("Sign In ✨", key="login_btn"):
-            try:
-                res = supabase.auth.sign_in_with_password({"email": login_email, "password": login_password})
-                st.session_state.user = res.user
+  st.markdown(
+      "<h2 style='text-align: center; color: #1e3a8a;'>🚗 AutoCost Cloud"
+      " SaaS</h2>",
+      unsafe_allow_html=True,
+  )
+  st.markdown(
+      "<p style='text-align: center; color: #475569;'>Please sign in or create"
+      " an account to manage your secure vehicle diary.</p>",
+      unsafe_allow_html=True,
+  )
 
-                st.success("🎉Successfully signed in!")
-                st.rerun()
-            except Exception as e:
-                st.error(f"❌ Login failed: {e}")
-                
-    with auth_tab2:
-        st.markdown("### Create New Account")
-        reg_email = st.text_input("Email Address", placeholder="name@example.com", key="reg_email")
-        reg_password = st.text_input("Password", type="password", key="reg_pass")
-        
-        if st.button("Register Account 🚀", key="reg_btn"):
-            try:
-                res = supabase.auth.sign_up({"email": reg_email, "password": reg_password})
-                st.success("✅ Account created successfully! You can now sign in.")
-            except Exception as e:
-                st.error(f"❌ Registration failed: {e}")
-                
-        st.stop()
+  auth_tab1, auth_tab2 = st.tabs(["🔑 Sign In", "📝 Register"])
 
+  with auth_tab1:
+    st.markdown("### Sign In to Your Account")
+    login_email = st.text_input(
+        "Email Address", placeholder="name@example.com", key="login_email"
+    )
+    login_password = st.text_input("Password", type="password", key="login_pass")
+    if st.button("Sign In ✨", key="login_btn"):
+      try:
+        res = supabase.auth.sign_in_with_password({
+            "email": login_email,
+            "password": login_password,
+        })
+        st.session_state.user = res.user
+        st.success("🎉 Successfully signed in!")
+        st.rerun()
+      except Exception as e:
+        st.error(f"❌ Login failed: {e}")
+
+  with auth_tab2:
+    st.markdown("### Create New Account")
+    reg_email = st.text_input(
+        "Email Address", placeholder="name@example.com", key="reg_email"
+    )
+    reg_password = st.text_input("Password", type="password", key="reg_pass")
+
+    if st.button("Register Account 🚀", key="reg_btn"):
+      try:
+        res = supabase.auth.sign_up({
+            "email": reg_email,
+            "password": reg_password,
+        })
+        st.success("✅ Account created successfully! You can now sign in.")
+      except Exception as e:
+        st.error(f"❌ Registration failed: {e}")
+
+  st.stop()
 # --- 👑 ƏSAS TƏTBİQ ---
 user_id = st.session_state.user.id
 user_email = st.session_state.user.email
 
 with st.sidebar:
-    st.markdown(f"👤 Logged in as:\n{user_email}")
-    st.write("---")
-    if st.button("🚪 Sign Out", use_container_width=True):
-        supabase.auth.sign_out()
-        st.session_state.user = None
-        st.rerun()
+  st.markdown(f"👤 Logged in as:\n{user_email}")
+  st.write("---")
+  if st.button("🚪 Sign Out", use_container_width=True):
+    supabase.auth.sign_out()
+    st.session_state.user = None
+    st.rerun()
 
-st.markdown("<h2>🚗 AutoCost — Car Expenses & Documents Diary</h2>", unsafe_allow_html=True)
-st.markdown("<p style='color: #475569; font-size: 15px;'>Smart cloud financial vehicle diary. Track your fuel, repairs, and documents securely.</p>", unsafe_allow_html=True)
+st.markdown(
+    "<h2>🚗 AutoCost — Car Expenses & Documents Diary</h2>",
+    unsafe_allow_html=True,
+)
+st.markdown(
+    "<p style='color: #475569; font-size: 15px;'>Smart cloud financial vehicle"
+    " diary. Track your fuel, repairs, and documents securely.</p>",
+    unsafe_allow_html=True,
+)
 st.write("---")
 
-tab1, tab2, tab3,tab4 = st.tabs(["💰 Add Expense", "🔍 Filter, Search & Analytics", "📜 Document Expiry Alerts","💎 Pro Subscription"])
+# --- 📑 TAB NAVİQASİYA (Avtomatik keçid üçün radio) ---
+tab_selection = st.radio(
+    "Navigation",
+    [
+        "💰 Add Expense",
+        "🔍 Filter, Search & Analytics",
+        "📜 Document Expiry Alerts",
+        "💎 Pro Subscription",
+    ],
+    horizontal=True,
+    key="my_tabs",
+    label_visibility="collapsed",
+)
+st.write("---")
 # --- TAB 1: XƏRC DAXİLMƏ ---
-with tab1:
+if tab_selection == "💰 Add Expense":
   st.markdown("### 💰 Log New Vehicle Expense")
 
   if not st.session_state.is_pro:
-    st.warning(
-        "🔒 Pro Subscription Required: Please switch to the **💎 Pro"
-        " Subscription** tab above to unlock expense management."
+    st.markdown(
+        """
+        <div style="background-color: #ffffff; padding: 25px; border-radius: 12px; border: 2px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center; margin-bottom: 20px;">
+            <h3 style="color: #1e3a8a; margin-top: 0;">🔒 AutoCost Pro Feature</h3>
+            <p style="color: #334155; font-size: 16px;">This is a Pro feature. Upgrade to AutoCost Pro to continue.</p>
+            <p style="color: #64748b; font-size: 14px;">Unlock advanced expense management, analytics horizon, and document alerts.</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
+    if st.button(
+        "Upgrade Now 💎", key="upgrade_btn_exp", use_container_width=True
+    ):
+      st.session_state.my_tabs = "💎 Pro Subscription"
+      st.rerun()
   else:
     col1, col2 = st.columns(2)
     with col1:
@@ -252,8 +303,6 @@ with tab1:
         "Add Expense to Cloud Log ✨", use_container_width=True
     )
     if add_expense_btn:
-        show_pro_popup()
-    if add_expense_btn:
       if car_model.strip() == "" or expense_amount <= 0:
         st.error(
             "⚠️ Please enter the vehicle model and ensure the amount is greater"
@@ -263,7 +312,6 @@ with tab1:
         cost_per_100km = 0.0
         if "Fuel" in expense_type and km_driven > 0:
           cost_per_100km = (expense_amount / km_driven) * 100
-
         try:
           supabase.table("expenses").insert({
               "user_id": user_id,
@@ -279,9 +327,8 @@ with tab1:
           st.success("✅ Expense successfully logged to your cloud database!")
         except Exception as e:
           st.error(f"❌ Error saving expense: {e}")
-
 # --- TAB 2: FILTER, SEARCH & ANALYTICS ---
-with tab2:
+elif tab_selection == "🔍 Filter, Search & Analytics":
   st.markdown("### 🔍 Filter, Search & Advanced Analytics Horizon")
 
   if not st.session_state.is_pro:
@@ -476,16 +523,26 @@ with tab2:
 
     except Exception as e:
       st.error(f"Error loading data: {e}")
-
 # --- TAB 3: DOCUMENT EXPIRY ALERTS ---
-with tab3:
+elif tab_selection == "📜 Document Expiry Alerts":
   st.markdown("### 📜 Document & Expiry Alerts Matrix")
 
   if not st.session_state.is_pro:
-    st.warning(
-        "🔒 Pro Subscription Required: Please switch to the **💎 Pro"
-        " Subscription** tab above to unlock document expiry alerts."
+    st.markdown(
+        """
+        <div style="background-color: #ffffff; padding: 25px; border-radius: 12px; border: 2px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center; margin-bottom: 20px;">
+            <h3 style="color: #1e3a8a; margin-top: 0;">🔒 AutoCost Pro Feature</h3>
+            <p style="color: #334155; font-size: 16px;">This is a Pro feature. Upgrade to AutoCost Pro to continue.</p>
+            <p style="color: #64748b; font-size: 14px;">Unlock advanced expense management, analytics horizon, and document alerts.</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
+    if st.button(
+        "Upgrade Now 💎", key="upgrade_btn_doc", use_container_width=True
+    ):
+      st.session_state.my_tabs = "💎 Pro Subscription"
+      st.rerun()
   else:
     with st.form("document_form", clear_on_submit=True):
       doc_col1, doc_col2 = st.columns(2)
@@ -519,8 +576,8 @@ with tab3:
             ),
         )
       add_doc_button = st.form_submit_button(
-            "Add Document Alert 🔔", use_container_width=True
-        )
+          "Add Document Alert 🔔", use_container_width=True
+      )
 
     if add_doc_button:
       if doc_car_model.strip() == "":
@@ -585,7 +642,6 @@ with tab3:
           alert_threshold = 7
         else:
           alert_threshold = int(alert_threshold)
-
         if days_left < 0:
           status_list.append("🔴 Expired")
           expired_count += 1
@@ -635,9 +691,9 @@ with tab3:
           else:
             st.error(f"❌ Email error: {err_msg}")
     else:
-      st.info("💡 No documents registered yet.")        
+      st.info("💡 No documents registered yet.")
 # --- TAB 4: PRO SUBSCRIPTION & ACCESS MANAGEMENT ---
-with tab4:
+elif tab_selection == "💎 Pro Subscription":
   st.markdown("### 💎 AutoCost Pro Subscription & Access")
   st.write(
       "AutoCost is a premium cloud financial vehicle diary. Payment integration"
@@ -654,7 +710,7 @@ with tab4:
                     border: 2px solid #2563eb; box-shadow: 0 4px 12px rgba(0,0,0,0.05); text-align: center;">
             <h3 style="color: #1e3a8a; margin-bottom: 10px;">AutoCost Pro</h3>
             <p style="color: #64748b; font-size: 14px;">Complete Vehicle Management Suite</p>
-            <h2 style="color: #2563eb; margin: 15px 0;">$2.99 <span style="font-size: 14px; color: #64748b;">/ month</span></h2>
+            <p style="color: #2563eb; font-weight: bold; font-size: 32px; margin: 15px 0;">$2.99 <span style="font-size: 14px; color: #64748b; font-weight: normal;">/ month</span></p>
             <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 15px 0;">
             <ul style="text-align: left; color: #334155; font-size: 14px; list-style-type: none; padding: 0; line-height: 2;">
                 <li>✅ Unlimited Cloud Expense Logs</li>
