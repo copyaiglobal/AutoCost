@@ -4,6 +4,15 @@ from supabase import create_client
 import pandas as pd
 import plotly.express as px
 import resend
+# 🔒 Bax düz bura yapışdır:
+@st.dialog("🔒 AutoCost Pro Feature")
+def show_pro_popup():
+    st.write("This is a Pro feature. Upgrade to AutoCost Pro to continue.")
+    st.write("Unlock advanced expense management, analytics horizon, and document alerts.")
+    
+    if st.button("Upgrade Now 💎", type="primary"):
+        st.session_state.current_tab = "💎 Pro Subscription"
+        st.rerun()
 
 try:
     url = st.secrets["SUPABASE_URL"]
@@ -242,6 +251,8 @@ with tab1:
     add_expense_btn = st.button(
         "Add Expense to Cloud Log ✨", use_container_width=True
     )
+    if add_expense_btn:
+        show_pro_popup()
     if add_expense_btn:
       if car_model.strip() == "" or expense_amount <= 0:
         st.error(
