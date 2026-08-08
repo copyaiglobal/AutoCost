@@ -87,6 +87,8 @@ def send_alert_email(user_email, doc_list_html):
         return False, str(e)
 
 # --- 🔐 SESSION STATE (İSTİFADƏÇİ GİRİŞİ) ---
+if "is_pro" not in st.session_state:
+    st.session_state.is_pro = False
 if "user" not in st.session_state:
     st.session_state.user = None
 
