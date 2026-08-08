@@ -105,6 +105,17 @@ if "is_pro" not in st.session_state:
 if "my_tabs" not in st.session_state:
   st.session_state.my_tabs = "💰 Add Expense"
 
+if "switch_to_pro" not in st.session_state:
+  st.session_state.switch_to_pro = False
+
+if "show_add_expense_pro_warning" not in st.session_state:
+  st.session_state.show_add_expense_pro_warning = False
+
+# Əgər Pro tabına keçid tələb olunubsa, radio-dan əvvəl tənzimləyirik
+if st.session_state.switch_to_pro:
+  st.session_state.my_tabs = "💎 Pro Subscription"
+  st.session_state.switch_to_pro = False
+
 if st.session_state.user is None:
   st.markdown(
       "<h2 style='text-align: center; color: #1e3a8a;'>🚗 AutoCost Cloud"
@@ -178,7 +189,7 @@ st.markdown(
 )
 st.write("---")
 
-# --- 📑 TAB NAVİQASİYA (Avtomatik keçid üçün radio) ---
+# --- 📑 TAB NAVİQASİYA ---
 tab_selection = st.radio(
     "Navigation",
     [
@@ -196,113 +207,95 @@ st.write("---")
 if tab_selection == "💰 Add Expense":
   st.markdown("### 💰 Log New Vehicle Expense")
 
-  if not st.session_state.is_pro:
+  col1, col2 = st.columns(2)
+  with col1:
+    car_model = st.text_input(
+        "Vehicle Model / Brand:",
+        placeholder="e.g., Toyota Prius",
+        key="car_model_input",
+    )
+    expense_type = st.selectbox(
+        "Expense Category:",
+        [
+            "Fuel ⛽",
+            "Repair 🔧",
+            "Maintenance 🛠️",
+            "Insurance 📄",
+            "Tax 💰",
+            "Other 📌",
+        ],
+        key="expense_type_input",
+    )
+
+  with col2:
+    expense_amount = st.number_input(
+        "Expense Amount ($):", min_value=0.0, step=1.0, key="expense_amount_input"
+    )
+
+    c_col1, c_col2 = st.columns(2)
+    with c_col1:
+      currency = st.selectbox(
+          "Currency", ["USD", "EUR", "AZN"], key="expense_currency"
+      )
+    with c_col2:
+      if currency == "USD":
+        default_rate = 1.0
+      elif currency == "EUR":
+        default_rate = 1.08
+      else:
+        default_rate = 0.59
+
+      exchange_rate = st.number_input(
+          "Exchange Rate to USD",
+          value=default_rate,
+          format="%.2f",
+          key="exchange_rate_input",
+      )
+
+  expense_date = st.date_input(
+      "Transaction Date:", datetime.date.today(), key="expense_date_input"
+  )
+  final_amount = expense_amount * exchange_rate
+
+  fuel_liters = 0.0
+  km_driven = 0.0
+
+  if "Fuel" in expense_type:
     st.markdown(
-        """
-        <div style="background-color: #ffffff; padding: 25px; border-radius: 12px; border: 2px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center; margin-bottom: 20px;">
-            <h3 style="color: #1e3a8a; margin-top: 0;">🔒 AutoCost Pro Feature</h3>
-            <p style="color: #334155; font-size: 16px;">This is a Pro feature. Upgrade to AutoCost Pro to continue.</p>
-            <p style="color: #64748b; font-size: 14px;">Unlock advanced expense management, analytics horizon, and document alerts.</p>
-        </div>
-        """,
+        "<div style='background-color: #eff6ff; padding: 15px; border-radius:"
+        " 10px; border: 1px solid #bfdbfe; margin-top: 10px;'>",
         unsafe_allow_html=True,
     )
-    if st.button(
-        "Upgrade Now 💎", key="upgrade_btn_exp", use_container_width=True
-    ):
-      st.session_state.my_tabs = "💎 Pro Subscription"
-      st.rerun()
-  else:
-    col1, col2 = st.columns(2)
-    with col1:
-      car_model = st.text_input(
-          "Vehicle Model / Brand:",
-          placeholder="e.g., Toyota Prius",
-          key="car_model_input",
+    st.markdown(
+        "<h4 style='color: #1e40af !important; margin-bottom: 10px;'>⛽ Fuel"
+        " Consumption Calculator Matrix</h4>",
+        unsafe_allow_html=True,
+    )
+    f_col1, f_col2 = st.columns(2)
+    with f_col1:
+      fuel_liters = st.number_input(
+          "Fuel Liters (L):", min_value=0.0, value=0.0, step=0.5, key="exp_liters"
       )
-      expense_type = st.selectbox(
-          "Expense Category:",
-          [
-              "Fuel ⛽",
-              "Repair 🔧",
-              "Maintenance 🛠️",
-              "Insurance 📄",
-              "Tax 💰",
-              "Other 📌",
-          ],
-          key="expense_type_input",
-      )
-
-    with col2:
-      expense_amount = st.number_input(
-          "Expense Amount ($):",
+    with f_col2:
+      km_driven = st.number_input(
+          "Kilometers Driven (km):",
           min_value=0.0,
+          value=0.0,
           step=1.0,
-          key="expense_amount_input",
+          key="exp_km",
       )
+    st.markdown("</div>", unsafe_allow_html=True)
+  st.write(" ")
 
-      c_col1, c_col2 = st.columns(2)
-      with c_col1:
-        currency = st.selectbox(
-            "Currency", ["USD", "EUR", "AZN"], key="expense_currency"
-        )
-      with c_col2:
-        if currency == "USD":
-          default_rate = 1.0
-        elif currency == "EUR":
-          default_rate = 1.08
-        else:
-          default_rate = 0.59
+  add_expense_btn = st.button(
+      "Add Expense to Cloud Log ✨", use_container_width=True
+  )
 
-        exchange_rate = st.number_input(
-            "Exchange Rate to USD",
-            value=default_rate,
-            format="%.2f",
-            key="exchange_rate_input",
-        )
-
-    expense_date = st.date_input(
-        "Transaction Date:", datetime.date.today(), key="expense_date_input"
-    )
-    final_amount = expense_amount * exchange_rate
-
-    fuel_liters = 0.0
-    km_driven = 0.0
-
-    if "Fuel" in expense_type:
-      st.markdown(
-          "<div style='background-color: #eff6ff; padding: 15px; border-radius:"
-          " 10px; border: 1px solid #bfdbfe; margin-top: 10px;'>",
-          unsafe_allow_html=True,
-      )
-      st.markdown(
-          "<h4 style='color: #1e40af !important; margin-bottom: 10px;'>⛽ Fuel"
-          " Consumption Calculator Matrix</h4>",
-          unsafe_allow_html=True,
-      )
-      f_col1, f_col2 = st.columns(2)
-      with f_col1:
-        fuel_liters = st.number_input(
-            "Fuel Liters (L):",
-            min_value=0.0,
-            value=0.0,
-            step=0.5,
-            key="exp_liters",
-        )
-      with f_col2:
-        km_driven = st.number_input(
-            "Kilometers Driven (km):",
-            min_value=0.0,
-            value=0.0,
-            step=1.0,
-            key="exp_km",
-        )
-      st.markdown("</div>", unsafe_allow_html=True)
-    st.write(" ")
-    add_expense_btn = st.button(
-        "Add Expense to Cloud Log ✨", use_container_width=True
-    )
-    if add_expense_btn:
+  if add_expense_btn:
+    if not st.session_state.is_pro:
+      st.session_state.show_add_expense_pro_warning = True
+    else:
+      st.session_state.show_add_expense_pro_warning = False
       if car_model.strip() == "" or expense_amount <= 0:
         st.error(
             "⚠️ Please enter the vehicle model and ensure the amount is greater"
@@ -312,6 +305,7 @@ if tab_selection == "💰 Add Expense":
         cost_per_100km = 0.0
         if "Fuel" in expense_type and km_driven > 0:
           cost_per_100km = (expense_amount / km_driven) * 100
+
         try:
           supabase.table("expenses").insert({
               "user_id": user_id,
@@ -327,6 +321,24 @@ if tab_selection == "💰 Add Expense":
           st.success("✅ Expense successfully logged to your cloud database!")
         except Exception as e:
           st.error(f"❌ Error saving expense: {e}")
+
+  # Pro deyilsə və düyməyə basılıbsa, qəfildən xəbərdarlıq və keçid düyməsi görünür
+  if st.session_state.get("show_add_expense_pro_warning", False):
+    st.markdown(
+        """
+        <div style="background-color: #ffffff; padding: 25px; border-radius: 12px; border: 2px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center; margin-top: 20px;"><h3 style="color: #1e3a8a; margin-top: 0;">🔒 AutoCost Pro Feature</h3>
+            <p style="color: #334155; font-size: 16px;">This is a Pro feature. Upgrade to AutoCost Pro to continue adding expenses.</p>
+            <p style="color: #64748b; font-size: 14px;">Unlock advanced expense management, analytics horizon, and document alerts.</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    if st.button(
+        "Upgrade Now 💎", key="upgrade_btn_from_expense", use_container_width=True
+    ):
+      st.session_state.switch_to_pro = True
+      st.session_state.show_add_expense_pro_warning = False
+      st.rerun()
 # --- TAB 2: FILTER, SEARCH & ANALYTICS ---
 elif tab_selection == "🔍 Filter, Search & Analytics":
   st.markdown("### 🔍 Filter, Search & Advanced Analytics Horizon")
@@ -541,7 +553,7 @@ elif tab_selection == "📜 Document Expiry Alerts":
     if st.button(
         "Upgrade Now 💎", key="upgrade_btn_doc", use_container_width=True
     ):
-      st.session_state.my_tabs = "💎 Pro Subscription"
+      st.session_state.switch_to_pro = True
       st.rerun()
   else:
     with st.form("document_form", clear_on_submit=True):
