@@ -111,6 +111,9 @@ if "switch_to_pro" not in st.session_state:
 if "show_add_expense_pro_warning" not in st.session_state:
   st.session_state.show_add_expense_pro_warning = False
 
+if "show_doc_pro_warning" not in st.session_state:
+  st.session_state.show_doc_pro_warning = False
+
 # Əgər Pro tabına keçid tələb olunubsa, radio-dan əvvəl tənzimləyirik
 if st.session_state.switch_to_pro:
   st.session_state.my_tabs = "💎 Pro Subscription"
@@ -322,7 +325,6 @@ if tab_selection == "💰 Add Expense":
         except Exception as e:
           st.error(f"❌ Error saving expense: {e}")
 
-  # Pro deyilsə və düyməyə basılıbsa, qəfildən xəbərdarlıq və keçid düyməsi görünür
   if st.session_state.get("show_add_expense_pro_warning", False):
     st.markdown(
         """
@@ -539,59 +541,46 @@ elif tab_selection == "🔍 Filter, Search & Analytics":
 elif tab_selection == "📜 Document Expiry Alerts":
   st.markdown("### 📜 Document & Expiry Alerts Matrix")
 
-  if not st.session_state.is_pro:
-    st.markdown(
-        """
-        <div style="background-color: #ffffff; padding: 25px; border-radius: 12px; border: 2px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center; margin-bottom: 20px;">
-            <h3 style="color: #1e3a8a; margin-top: 0;">🔒 AutoCost Pro Feature</h3>
-            <p style="color: #334155; font-size: 16px;">This is a Pro feature. Upgrade to AutoCost Pro to continue.</p>
-            <p style="color: #64748b; font-size: 14px;">Unlock advanced expense management, analytics horizon, and document alerts.</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    if st.button(
-        "Upgrade Now 💎", key="upgrade_btn_doc", use_container_width=True
-    ):
-      st.session_state.switch_to_pro = True
-      st.rerun()
-  else:
-    with st.form("document_form", clear_on_submit=True):
-      doc_col1, doc_col2 = st.columns(2)
-      with doc_col1:
-        doc_car_model = st.text_input(
-            "Vehicle Model for Document:", placeholder="e.g., Prius, BMW"
-        )
-        doc_name = st.selectbox(
-            "Document Type:",
-            [
-                "Insurance 📜",
-                "Technical Inspection 🔍",
-                "Road Tax 🛣️",
-                "Other 📄",
-            ],
-        )
-      with doc_col2:
-        doc_expiry_date = st.date_input(
-            "Document Expiry Date:",
-            datetime.date.today() + datetime.timedelta(days=30),
-        )
-
-        alert_days = st.number_input(
-            "Alert Days Before Expiry:",
-            min_value=1,
-            max_value=90,
-            value=7,
-            help=(
-                "How many days in advance would you like to receive an email"
-                " alert?"
-            ),
-        )
-      add_doc_button = st.form_submit_button(
-          "Add Document Alert 🔔", use_container_width=True
+  with st.form("document_form", clear_on_submit=False):
+    doc_col1, doc_col2 = st.columns(2)
+    with doc_col1:
+      doc_car_model = st.text_input(
+          "Vehicle Model for Document:", placeholder="e.g., Prius, BMW"
+      )
+      doc_name = st.selectbox(
+          "Document Type:",
+          [
+              "Insurance 📜",
+              "Technical Inspection 🔍",
+              "Road Tax 🛣️",
+              "Other 📄",
+          ],
+      )
+    with doc_col2:
+      doc_expiry_date = st.date_input(
+          "Document Expiry Date:",
+          datetime.date.today() + datetime.timedelta(days=30),
       )
 
-    if add_doc_button:
+      alert_days = st.number_input(
+          "Alert Days Before Expiry:",
+          min_value=1,
+          max_value=90,
+          value=7,
+          help=(
+              "How many days in advance would you like to receive an email"
+              " alert?"
+          ),
+      )
+    add_doc_button = st.form_submit_button(
+        "Add Document Alert 🔔", use_container_width=True
+    )
+
+  if add_doc_button:
+    if not st.session_state.is_pro:
+      st.session_state.show_doc_pro_warning = True
+    else:
+      st.session_state.show_doc_pro_warning = False
       if doc_car_model.strip() == "":
         st.error("⚠️ Please enter the vehicle model for the document!")
       else:
@@ -609,101 +598,117 @@ elif tab_selection == "📜 Document Expiry Alerts":
         except Exception as e:
           st.error(f"❌ Error saving document: {e}")
 
-    try:
-      docs_res = (
-          supabase.table("vehicle_documents")
-          .select("*")
-          .eq("user_id", user_id)
-          .execute()
-      )
-      docs_data = docs_res.data
-    except Exception as e:
-      st.error(f"Supabase detallı xəta: {e}")
-      docs_data = []
+  if st.session_state.get("show_doc_pro_warning", False):
+    st.markdown(
+        """
+        <div style="background-color: #ffffff; padding: 25px; border-radius: 12px; border: 2px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center; margin-top: 20px;">
+            <h3 style="color: #1e3a8a; margin-top: 0;">🔒 AutoCost Pro Feature</h3>
+            <p style="color: #334155; font-size: 16px;">This is a Pro feature. Upgrade to AutoCost Pro to continue adding document alerts.</p>
+            <p style="color: #64748b; font-size: 14px;">Unlock advanced expense management, analytics horizon, and document alerts.</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    if st.button(
+        "Upgrade Now 💎", key="upgrade_btn_from_doc", use_container_width=True
+    ):
+      st.session_state.switch_to_pro = True
+      st.session_state.show_doc_pro_warning = False
+      st.rerun()
 
-    if docs_data:
-      docs_df = pd.DataFrame(docs_data)
-      docs_df = docs_df.rename(
-          columns={
-              "vehicle_model": "Vehicle Model",
-              "doc_name": "Document Type",
-              "expiry_date": "Expiry Date",
-              "alert_days": "Alert Days",
-          }
-      )
+  try:
+    docs_res = (
+        supabase.table("vehicle_documents")
+        .select("*")
+        .eq("user_id", user_id)
+        .execute()
+    )
+    docs_data = docs_res.data
+  except Exception as e:
+    docs_data = []
 
-      st.write("---")
-      st.markdown("#### Registered Documents & Status Horizon")
-      today = datetime.date.today()
+  if docs_data:
+    docs_df = pd.DataFrame(docs_data)
+    docs_df = docs_df.rename(
+        columns={
+            "vehicle_model": "Vehicle Model",
+            "doc_name": "Document Type",
+            "expiry_date": "Expiry Date",
+            "alert_days": "Alert Days",
+        }
+    )
 
-      status_list = []
-      days_left_list = []
-      expired_count = 0
-      soon_count = 0
-      due_docs_for_email = []
+    st.write("---")
+    st.markdown("#### Registered Documents & Status Horizon")
+    today = datetime.date.today()
 
-      for idx, row in docs_df.iterrows():
-        exp_date = datetime.datetime.strptime(
-            row["Expiry Date"], "%Y-%m-%d"
-        ).date()
-        days_left = (exp_date - today).days
-        days_left_list.append(days_left)
+    status_list = []
+    days_left_list = []
+    expired_count = 0
+    soon_count = 0
+    due_docs_for_email = []
 
-        alert_threshold = row.get("Alert Days", 7)
-        if pd.isna(alert_threshold):
-          alert_threshold = 7
-        else:
-          alert_threshold = int(alert_threshold)
-        if days_left < 0:
-          status_list.append("🔴 Expired")
-          expired_count += 1
-          due_docs_for_email.append(
-              f"<li><b>{row['Vehicle Model']} - {row['Document Type']}</b>"
-              f" (EXPIRED by {-days_left} days)</li>"
-          )
-        elif days_left <= alert_threshold:
-          status_list.append(f"⚠️ Expiring Soon ({days_left} days left)")
-          soon_count += 1
-          due_docs_for_email.append(
-              f"<li><b>{row['Vehicle Model']} - {row['Document Type']}</b>"
-              f" (Expires in {days_left} days)</li>"
-          )
-        else:
-          status_list.append(f"🟢 Valid ({days_left} days left)")
+    for idx, row in docs_df.iterrows():
+      exp_date = datetime.datetime.strptime(
+          row["Expiry Date"], "%Y-%m-%d"
+      ).date()
+      days_left = (exp_date - today).days
+      days_left_list.append(days_left)
 
-      docs_display = docs_df.copy()
-      docs_display["Status"] = status_list
-
-      st.table(docs_display[[
-          "Vehicle Model",
-          "Document Type",
-          "Expiry Date",
-          "Alert Days",
-          "Status",
-      ]])
-      if expired_count > 0:
-        st.error(f"🚨 Attention! You have {expired_count} expired document(s)!")
-      if soon_count > 0:
-        st.warning(
-            f"⚠️ Warning! You have {soon_count} document(s) reaching their alert"
-            " threshold."
+      alert_threshold = row.get("Alert Days", 7)
+      if pd.isna(alert_threshold):
+        alert_threshold = 7
+      else:
+        alert_threshold = int(alert_threshold)
+      if days_left < 0:
+        status_list.append("🔴 Expired")
+        expired_count += 1
+        due_docs_for_email.append(
+            f"<li><b>{row['Vehicle Model']} - {row['Document Type']}</b>"
+            f" (EXPIRED by {-days_left} days)</li>"
         )
+      elif days_left <= alert_threshold:
+        status_list.append(f"⚠️ Expiring Soon ({days_left} days left)")
+        soon_count += 1
+        due_docs_for_email.append(
+            f"<li><b>{row['Vehicle Model']} - {row['Document Type']}</b>"
+            f" (Expires in {days_left} days)</li>"
+        )
+      else:
+        status_list.append(f"🟢 Valid ({days_left} days left)")
 
-      if due_docs_for_email:
-        current_due_signature = str(due_docs_for_email)
-        if st.session_state.get("last_sent_docs") != current_due_signature:
-          doc_list_html = "".join(due_docs_for_email)
-          success, err_msg = send_alert_email(user_email, doc_list_html)
-          if success:
-            st.toast(
-                "📧 Automated email alert sent with all due documents!",
-                icon="🚀",
-            )
-            st.session_state["last_sent_docs"] = current_due_signature
-          else:
-            st.error(f"❌ Email error: {err_msg}")
-    else:
-      st.info("💡 No documents registered yet.")
+    docs_display = docs_df.copy()
+    docs_display["Status"] = status_list
+
+    st.table(docs_display[[
+        "Vehicle Model",
+        "Document Type",
+        "Expiry Date",
+        "Alert Days",
+        "Status",
+    ]])
+    if expired_count > 0:
+      st.error(f"🚨 Attention! You have {expired_count} expired document(s)!")
+    if soon_count > 0:
+      st.warning(
+          f"⚠️ Warning! You have {soon_count} document(s) reaching their alert"
+          " threshold."
+      )
+
+    if due_docs_for_email:
+      current_due_signature = str(due_docs_for_email)
+      if st.session_state.get("last_sent_docs") != current_due_signature:
+        doc_list_html = "".join(due_docs_for_email)
+        success, err_msg = send_alert_email(user_email, doc_list_html)
+        if success:
+          st.toast(
+              "📧 Automated email alert sent with all due documents!", icon="🚀"
+          )
+          st.session_state["last_sent_docs"] = current_due_signature
+        else:
+          st.error(f"❌ Email error: {err_msg}")
+  else:
+    st.info("💡 No documents registered yet.")
 # --- TAB 4: PRO SUBSCRIPTION & ACCESS MANAGEMENT ---
 elif tab_selection == "💎 Pro Subscription":
   st.markdown("### 💎 AutoCost Pro Subscription & Access")
